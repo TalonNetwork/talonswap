@@ -7,10 +7,10 @@ import network.nerve.swap.model.po.SwapPairReservesPO;
  */
 public interface SwapPairReservesStorageService {
 
-    boolean savePairReserves(String address, SwapPairReservesPO dto);
+    boolean savePairReserves(String address, SwapPairReservesPO dto) throws Exception;
 
     SwapPairReservesPO getPairReserves(String address);
 
-    boolean delelePairReserves(String address);
+    boolean delelePairReserves(String address) throws Exception;
 
 }

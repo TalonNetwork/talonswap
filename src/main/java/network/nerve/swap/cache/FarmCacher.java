@@ -1,6 +1,6 @@
 package network.nerve.swap.cache;
 
-import network.nerve.swap.model.dto.SwapPairDTO;
+import io.nuls.base.data.NulsHash;
 import network.nerve.swap.model.po.FarmPoolPO;
 
 import java.util.Collection;
@@ -8,14 +8,13 @@ import java.util.Collection;
 /**
  * @author Niels
  */
-//TODO pierre 实现类
 public interface FarmCacher {
 
-    FarmPoolPO get(String hash);
+    FarmPoolPO get(NulsHash hash);
 
-    FarmPoolPO put(String hash, FarmPoolPO po);
+    FarmPoolPO put(NulsHash hash, FarmPoolPO po);
 
-    FarmPoolPO remove(String hash);
+    FarmPoolPO remove(NulsHash hash);
 
     Collection<FarmPoolPO> getList();
 }

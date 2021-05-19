@@ -35,6 +35,7 @@ public class SystemBaseTransaction extends BaseTransaction{
 
     public SystemBaseTransaction(String orginTxHash) {
         this.orginTxHash = orginTxHash;
+        setTxData();
     }
 
     @Override

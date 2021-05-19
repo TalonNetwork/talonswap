@@ -1,6 +1,9 @@
 package network.nerve.swap.model.po;
 
+import io.nuls.base.basic.AddressTool;
 import network.nerve.swap.model.NerveToken;
+
+import java.util.Arrays;
 
 /**
  * @author Niels
@@ -57,5 +60,20 @@ public class SwapPairPO {
         po.setToken1(token1.clone());
         po.setTokenLP(tokenLP.clone());
         return po;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("{");
+        sb.append("\"address\":")
+                .append('\"').append(AddressTool.getStringAddressByBytes(address)).append('\"');
+        sb.append(",\"token0\":")
+                .append(token0.toString());
+        sb.append(",\"token1\":")
+                .append(token1.toString());
+        sb.append(",\"tokenLP\":")
+                .append(tokenLP.toString());
+        sb.append('}');
+        return sb.toString();
     }
 }

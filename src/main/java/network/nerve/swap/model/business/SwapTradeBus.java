@@ -29,7 +29,7 @@ import java.util.List;
  * @author: PierreLuo
  * @date: 2021/4/1
  */
-public class SwapTradeBus extends BaseBus {
+public class SwapTradeBus {
 
     /**
      * 交易对的变化数据

@@ -9,7 +9,6 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
 import io.nuls.core.log.logback.NulsLogger;
-import network.nerve.swap.cache.LedgerAssetCacher;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.help.LedgerAssetRegisterHelper;
@@ -66,7 +65,7 @@ public class CreatePairTxProcessor implements TransactionProcessor {
         List<Transaction> failsList = new ArrayList<>();
         String errorCode = SwapErrorCode.SUCCESS.getCode();
         for (Transaction tx : txs) {
-            if (tx.getType() != TxType.CREATE_SWAP_PAIR) {
+            if (tx.getType() != getType()) {
                 logger.error("Tx type is wrong! hash-{}", tx.getHash().toHex());
                 failsList.add(tx);
                 errorCode = SwapErrorCode.DATA_ERROR.getCode();
@@ -97,7 +96,7 @@ public class CreatePairTxProcessor implements TransactionProcessor {
                 continue;
             }
         }
-        resultMap.put("txList", txs);
+        resultMap.put("txList", failsList);
         resultMap.put("errorCode", errorCode);
         return resultMap;
     }

@@ -1,20 +1,15 @@
 package network.nerve.swap.cache.impl;
 
-import io.nuls.base.basic.AddressTool;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import network.nerve.swap.cache.SwapPairCacher;
 import network.nerve.swap.manager.ChainManager;
-import network.nerve.swap.model.Chain;
-import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.dto.SwapPairDTO;
 import network.nerve.swap.model.po.SwapPairPO;
 import network.nerve.swap.model.po.SwapPairReservesPO;
-import network.nerve.swap.rpc.call.LedgerCall;
 import network.nerve.swap.storage.SwapPairReservesStorageService;
 import network.nerve.swap.storage.SwapPairStorageService;
 
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;

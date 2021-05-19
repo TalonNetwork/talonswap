@@ -75,7 +75,7 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
         List<Transaction> failsList = new ArrayList<>();
         String errorCode = SwapErrorCode.SUCCESS.getCode();
         for (Transaction tx : txs) {
-            if (tx.getType() != TxType.SWAP_REMOVE_LIQUIDITY) {
+            if (tx.getType() != getType()) {
                 logger.error("Tx type is wrong! hash-{}", tx.getHash().toHex());
                 failsList.add(tx);
                 errorCode = SwapErrorCode.DATA_ERROR.getCode();
@@ -99,8 +99,8 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
                 errorCode = SwapErrorCode.EXPIRED.getCode();
                 continue;
             }
-            NerveToken tokenA = new NerveToken(txData.getAssetChainIdA(), txData.getAssetIdA());
-            NerveToken tokenB = new NerveToken(txData.getAssetChainIdB(), txData.getAssetIdB());
+            NerveToken tokenA = txData.getTokenA();
+            NerveToken tokenB = txData.getTokenB();
 
             // 检查tokenA,B是否存在，pair地址是否合法
             LedgerAssetDTO assetA = ledgerAssetCacher.getLedgerAsset(tokenA);
@@ -129,7 +129,7 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
                     errorCode = SwapErrorCode.PAIR_INCONSISTENCY.getCode();
                     continue;
                 }
-                removeLiquidityHandler.calRemoveLiquidityBusiness(chainId, iPairFactory, dto.getPairAddress(), dto.getLiquidity(),
+                SwapUtils.calRemoveLiquidityBusiness(chainId, iPairFactory, dto.getPairAddress(), dto.getLiquidity(),
                         tokenA, tokenB, amountAMin, amountBMin);
             } catch (NulsException e) {
                 Log.error(e);
@@ -138,7 +138,7 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
                 continue;
             }
         }
-        resultMap.put("txList", txs);
+        resultMap.put("txList", failsList);
         resultMap.put("errorCode", errorCode);
         return resultMap;
     }

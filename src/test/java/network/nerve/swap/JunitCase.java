@@ -1,5 +1,7 @@
 package network.nerve.swap;
 
+import network.nerve.swap.utils.NerveCallback;
+
 /**
  * @author Niels
  */
@@ -12,14 +14,15 @@ public class JunitCase<T> {
      * @param exClass 抛出的是什么异常
      * @param message 打印信息
      */
-    public JunitCase(String key,T obj, Object[] params, Object want, boolean wantEx, Class<? extends Exception> exClass, String message) {
+    public JunitCase(String key, T obj, Object[] params, Object want, boolean wantEx, Class<? extends Exception> exClass, NerveCallback callBack) {
         this.key = key;
         this.obj = obj;
         this.params = params;
         this.want = want;
         this.wantEx = wantEx;
         this.exClass = exClass;
-        this.message = message;
+        this.message = key + "测试完成";
+        this.callBack = callBack;
     }
 
     //用例标识
@@ -36,6 +39,16 @@ public class JunitCase<T> {
     private Class<? extends Exception> exClass;
     //    打印信息
     private String message;
+
+    private NerveCallback callBack;
+
+    public NerveCallback getCallBack() {
+        return callBack;
+    }
+
+    public void setCallBack(NerveCallback callBack) {
+        this.callBack = callBack;
+    }
 
     public String getKey() {
         return key;

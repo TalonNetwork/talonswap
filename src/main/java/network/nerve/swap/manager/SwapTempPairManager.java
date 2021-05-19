@@ -51,9 +51,9 @@ public class SwapTempPairManager {
         this.swapPairCacher = SpringLiteContext.getBean(SwapPairCacher.class);
     }
 
-    public SwapTempPairManager newInstance(int chainId) {
-        this.chainId = chainId;
+    public static SwapTempPairManager newInstance(int chainId) {
         SwapTempPairManager swapTempPairManager = new SwapTempPairManager();
+        swapTempPairManager.chainId = chainId;
         return swapTempPairManager;
     }
 

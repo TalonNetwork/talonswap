@@ -28,7 +28,9 @@ package network.nerve.swap.model.business;
  * @date: 2021/4/12
  */
 public class BaseBus {
+
     private long preBlockHeight;
+
     private long preBlockTime;
 
     public long getPreBlockHeight() {

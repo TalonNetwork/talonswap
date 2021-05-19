@@ -49,13 +49,17 @@ public class TradePairBus extends BaseBus {
     private NerveToken tokenIn;
     private BigInteger amountIn;
     /**
+     * `非`流动性提供者可奖励的交易手续费
+     */
+    private BigInteger unLiquidityAwardFee;
+    /**
      * 流出池子的token
      */
     private NerveToken tokenOut;
     private BigInteger amountOut;
     private byte[] to;
 
-    public TradePairBus(byte[] pairAddress, BigInteger balance0, BigInteger balance1, BigInteger reserve0, BigInteger reserve1, NerveToken tokenIn, BigInteger amountIn, NerveToken tokenOut, BigInteger amountOut, byte[] to) {
+    public TradePairBus(byte[] pairAddress, BigInteger balance0, BigInteger balance1, BigInteger reserve0, BigInteger reserve1, NerveToken tokenIn, BigInteger amountIn, BigInteger unLiquidityAwardFee, NerveToken tokenOut, BigInteger amountOut, byte[] to) {
         this.pairAddress = pairAddress;
         this.balance0 = balance0;
         this.balance1 = balance1;
@@ -63,6 +67,7 @@ public class TradePairBus extends BaseBus {
         this.reserve1 = reserve1;
         this.tokenIn = tokenIn;
         this.amountIn = amountIn;
+        this.unLiquidityAwardFee = unLiquidityAwardFee;
         this.tokenOut = tokenOut;
         this.amountOut = amountOut;
         this.to = to;
@@ -122,6 +127,14 @@ public class TradePairBus extends BaseBus {
 
     public void setAmountIn(BigInteger amountIn) {
         this.amountIn = amountIn;
+    }
+
+    public BigInteger getUnLiquidityAwardFee() {
+        return unLiquidityAwardFee;
+    }
+
+    public void setUnLiquidityAwardFee(BigInteger unLiquidityAwardFee) {
+        this.unLiquidityAwardFee = unLiquidityAwardFee;
     }
 
     public NerveToken getTokenOut() {

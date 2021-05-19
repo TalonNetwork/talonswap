@@ -23,9 +23,9 @@ public interface SwapConstant {
     byte[] DEFAULT_NONCE = HexUtil.decode("0000000000000000");
 
     byte[] ZERO_BYTES = new byte[]{0};
-    //todo 确定4可不可以用
-    byte PAIR_ADDRESS_TYPE = 5;
-    byte FARM_ADDRESS_TYPE = 6;
+    byte PAIR_ADDRESS_TYPE = 4;
+    byte FARM_ADDRESS_TYPE = 5;
+    byte STABLE_PAIR_ADDRESS_TYPE = 6;
 
     int LP_TOKEN_DECIMALS = 18;
     BigInteger MINIMUM_LIQUIDITY = BigInteger.valueOf(1000);
@@ -35,9 +35,19 @@ public interface SwapConstant {
     int INIT_CAPACITY_2 = 2;
 
     String LINE = "_";
+    // TNVTdTSQndufx1WRqrFhW9BESjsrJVKiRhcXE
+    // NERVEepb7Z9BLexJY2DDxvzR7djDbU1TpWSjd2
+    //String STABLE_PAIR_PUBKEY = "888888888888888888888888888888888888888888888888888888888888888888";
+    String STABLE_PAIR = "STABLE_PAIR_";
 
+    BigInteger BI_1E12 = BigInteger.valueOf(1000000000000L);
+    BigInteger BI_100 = BigInteger.valueOf(100);
+    BigInteger BI_100_000 = BigInteger.valueOf(100000);
     BigInteger BI_1000_000 = BigInteger.valueOf(1000000);
     BigInteger BI_1000 = BigInteger.valueOf(1000);
     BigInteger BI_997 = BigInteger.valueOf(997);
     BigInteger BI_3 = BigInteger.valueOf(3);
+    BigInteger BI_50 = BigInteger.valueOf(50);
+
+
 }

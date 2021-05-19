@@ -34,16 +34,19 @@ import java.math.BigInteger;
 public class SwapTradeDTO {
 
     private byte[] userAddress;
-    private byte[] pairAddress;
+    /**
+     * 用户交易时的第一个交易对
+     */
+    private byte[] firstPairAddress;
     /**
      * 用户卖出的资产信息和金额
      */
     private NerveToken tokenIn;
     private BigInteger amountIn;
 
-    public SwapTradeDTO(byte[] userAddress, byte[] pairAddress, NerveToken tokenIn, BigInteger amountIn) {
+    public SwapTradeDTO(byte[] userAddress, byte[] firstPairAddress, NerveToken tokenIn, BigInteger amountIn) {
         this.userAddress = userAddress;
-        this.pairAddress = pairAddress;
+        this.firstPairAddress = firstPairAddress;
         this.tokenIn = tokenIn;
         this.amountIn = amountIn;
     }
@@ -56,12 +59,12 @@ public class SwapTradeDTO {
         this.userAddress = userAddress;
     }
 
-    public byte[] getPairAddress() {
-        return pairAddress;
+    public byte[] getFirstPairAddress() {
+        return firstPairAddress;
     }
 
-    public void setPairAddress(byte[] pairAddress) {
-        this.pairAddress = pairAddress;
+    public void setFirstPairAddress(byte[] firstPairAddress) {
+        this.firstPairAddress = firstPairAddress;
     }
 
     public NerveToken getTokenIn() {

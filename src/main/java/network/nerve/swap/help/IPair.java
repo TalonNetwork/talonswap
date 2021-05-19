@@ -47,9 +47,9 @@ public interface IPair {
     void update(BigInteger liquidityChange,
                 BigInteger balance0, BigInteger balance1,
                 BigInteger reserve0, BigInteger reserve1,
-                long blockHeight, long blockTime);
+                long blockHeight, long blockTime) throws Exception;
 
     void rollback(BigInteger liquidityChange,
                   BigInteger reserve0, BigInteger reserve1,
-                  long blockHeight, long blockTime);
+                  long blockHeight, long blockTime) throws Exception;
 }

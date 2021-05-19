@@ -33,7 +33,6 @@ import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import io.nuls.core.crypto.HexUtil;
 import io.nuls.core.exception.NulsException;
-import io.nuls.core.exception.NulsRuntimeException;
 import io.nuls.core.log.Log;
 import network.nerve.swap.cache.LedgerAssetCacher;
 import network.nerve.swap.cache.SwapPairCacher;
@@ -51,19 +50,15 @@ import network.nerve.swap.model.bo.SwapResult;
 import network.nerve.swap.model.business.RemoveLiquidityBus;
 import network.nerve.swap.model.dto.LedgerAssetDTO;
 import network.nerve.swap.model.dto.RemoveLiquidityDTO;
-import network.nerve.swap.model.po.SwapPairPO;
 import network.nerve.swap.model.tx.SwapSystemDealTransaction;
 import network.nerve.swap.model.tx.SwapSystemRefundTransaction;
 import network.nerve.swap.model.txdata.RemoveLiquidityData;
 import network.nerve.swap.utils.SwapDBUtil;
 import network.nerve.swap.utils.SwapUtils;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
-
-import static network.nerve.swap.constant.SwapErrorCode.*;
 
 /**
  * @author: PierreLuo
@@ -99,6 +94,8 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
         BatchInfo batchInfo = chainManager.getChain(chainId).getBatchInfo();
         RemoveLiquidityDTO dto = null;
         try {
+            CoinData coinData = tx.getCoinDataInstance();
+            dto = getRemoveLiquidityInfo(chainId, coinData);
             // 提取业务参数
             RemoveLiquidityData txData = new RemoveLiquidityData();
             txData.parse(tx.getTxData(), 0);
@@ -106,17 +103,14 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
             if (blockTime > deadline) {
                 throw new NulsException(SwapErrorCode.EXPIRED);
             }
-            NerveToken tokenA = new NerveToken(txData.getAssetChainIdA(), txData.getAssetIdA());
-            NerveToken tokenB = new NerveToken(txData.getAssetChainIdB(), txData.getAssetIdB());
+            NerveToken tokenA = txData.getTokenA();
+            NerveToken tokenB = txData.getTokenB();
             // 检查tokenA,B是否存在，pair地址是否合法
             LedgerAssetDTO assetA = ledgerAssetCacher.getLedgerAsset(tokenA);
             LedgerAssetDTO assetB = ledgerAssetCacher.getLedgerAsset(tokenB);
             if (assetA == null || assetB == null) {
                 throw new NulsException(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
             }
-
-            CoinData coinData = tx.getCoinDataInstance();
-            dto = getRemoveLiquidityInfo(chainId, coinData);
             if (!swapPairCacher.isExist(AddressTool.getStringAddressByBytes(dto.getPairAddress()))) {
                 throw new NulsException(SwapErrorCode.PAIR_NOT_EXIST);
             }
@@ -127,12 +121,10 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
             BigInteger liquidity = dto.getLiquidity();
 
             // 整合计算数据
-            RemoveLiquidityBus bus = calRemoveLiquidityBusiness(chainId, iPairFactory, dto.getPairAddress(), liquidity,
+            RemoveLiquidityBus bus = SwapUtils.calRemoveLiquidityBusiness(chainId, iPairFactory, dto.getPairAddress(), liquidity,
                     tokenA, tokenB, txData.getAmountAMin(), txData.getAmountBMin());
 
             IPair pair = bus.getPair();
-            NerveToken token0 = bus.getToken0();
-            NerveToken token1 = bus.getToken1();
             BigInteger amount0 = bus.getAmount0();
             BigInteger amount1 = bus.getAmount1();
 
@@ -146,44 +138,16 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
             // 组装系统成交交易
             NerveToken tokenLP = pair.getPair().getTokenLP();
             LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
-            LedgerBalance ledgerBalance0 = tempBalanceManager.getBalance(dto.getPairAddress(), token0.getChainId(), token0.getAssetId()).getData();
-            LedgerBalance ledgerBalance1 = tempBalanceManager.getBalance(dto.getPairAddress(), token1.getChainId(), token1.getAssetId()).getData();
-            LedgerBalance ledgerBalanceLp = tempBalanceManager.getBalance(dto.getPairAddress(), tokenLP.getChainId(), tokenLP.getAssetId()).getData();
-
-            SwapSystemDealTransaction sysDeal = new SwapSystemDealTransaction(tx.getHash().toHex(), blockTime);
-            sysDeal.newFrom()
-                     .setFrom(ledgerBalance0, amount0).endFrom()
-                   .newFrom()
-                     .setFrom(ledgerBalance1, amount1).endFrom()
-                   .newFrom()
-                     .setFrom(ledgerBalanceLp, liquidity).endFrom()
-                   .newTo()
-                     .setToAddress(txData.getTo())
-                     .setToAssetsChainId(token0.getChainId())
-                     .setToAssetsId(token0.getAssetId())
-                     .setToAmount(amount0).endTo()
-                   .newTo()
-                     .setToAddress(txData.getTo())
-                     .setToAssetsChainId(token1.getChainId())
-                     .setToAssetsId(token1.getAssetId())
-                     .setToAmount(amount1).endTo();
-
-            Transaction sysDealTx = sysDeal.build();
+            Transaction sysDealTx = this.makeSystemDealTx(bus, dto, tokenLP, txData.getTo(), tx.getHash().toHex(), blockTime, tempBalanceManager);
             result.setSubTx(sysDealTx);
-            try {
-                result.setSubTxStr(HexUtil.encode(sysDealTx.serialize()));
-            } catch (IOException e) {
-                throw new NulsException(SwapErrorCode.IO_ERROR, e);
-            }
+            result.setSubTxStr(SwapUtils.tx2Hex(sysDealTx));
             // 更新临时余额
-            tempBalanceManager.refreshTempBalance(chainId, sysDealTx);
+            tempBalanceManager.refreshTempBalance(chainId, sysDealTx, blockTime);
             // 更新临时数据
             BigInteger balance0 = bus.getReserve0().subtract(amount0);
             BigInteger balance1 = bus.getReserve1().subtract(amount1);
             pair.update(liquidity.negate(), balance0, balance1, bus.getReserve0(), bus.getReserve1(), blockHeight, blockTime);
-
-
-        } catch (NulsException e) {
+        } catch (Exception e) {
             Log.error(e);
             // 装填失败的执行结果
             result.setTxType(txType());
@@ -191,8 +155,11 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
             result.setHash(tx.getHash().toHex());
             result.setTxTime(tx.getTime());
             result.setBlockHeight(blockHeight);
-            result.setErrorMessage(e.format());
+            result.setErrorMessage(e instanceof NulsException ? ((NulsException) e).format() : e.getMessage());
 
+            if (dto == null) {
+                return result;
+            }
             // 组装系统退还交易
             IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(dto.getPairAddress()));
             NerveToken tokenLP = pair.getPair().getTokenLP();
@@ -209,21 +176,45 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
                         .setToAmount(dto.getLiquidity()).endTo()
                       .build();
             result.setSubTx(refundTx);
-            try {
-                String refundTxStr = HexUtil.encode(refundTx.serialize());
-                result.setSubTxStr(refundTxStr);
-            } catch (IOException e2) {
-                throw new NulsRuntimeException(SwapErrorCode.IO_ERROR, e2);
-            }
+            String refundTxStr = SwapUtils.tx2Hex(refundTx);
+            result.setSubTxStr(refundTxStr);
             // 更新临时余额
-            try {
-                tempBalanceManager.refreshTempBalance(chainId, refundTx);
-            } catch (NulsException e3) {
-                throw new NulsRuntimeException(e3.getErrorCode(), e3);
-            }
+            tempBalanceManager.refreshTempBalance(chainId, refundTx, blockTime);
+        } finally {
+            batchInfo.getSwapResultMap().put(tx.getHash().toHex(), result);
         }
-        batchInfo.getSwapResultMap().put(tx.getHash().toHex(), result);
         return result;
+    }
+
+    private Transaction makeSystemDealTx(RemoveLiquidityBus bus, RemoveLiquidityDTO dto, NerveToken tokenLP, byte[] to, String orginTxHash, long blockTime, LedgerTempBalanceManager tempBalanceManager) {
+        NerveToken token0 = bus.getToken0();
+        NerveToken token1 = bus.getToken1();
+        BigInteger amount0 = bus.getAmount0();
+        BigInteger amount1 = bus.getAmount1();
+        LedgerBalance ledgerBalance0 = tempBalanceManager.getBalance(dto.getPairAddress(), token0.getChainId(), token0.getAssetId()).getData();
+        LedgerBalance ledgerBalance1 = tempBalanceManager.getBalance(dto.getPairAddress(), token1.getChainId(), token1.getAssetId()).getData();
+        LedgerBalance ledgerBalanceLp = tempBalanceManager.getBalance(dto.getPairAddress(), tokenLP.getChainId(), tokenLP.getAssetId()).getData();
+
+        SwapSystemDealTransaction sysDeal = new SwapSystemDealTransaction(orginTxHash, blockTime);
+        sysDeal.newFrom()
+                .setFrom(ledgerBalance0, amount0).endFrom()
+                .newFrom()
+                .setFrom(ledgerBalance1, amount1).endFrom()
+                .newFrom()
+                .setFrom(ledgerBalanceLp, dto.getLiquidity()).endFrom()
+                .newTo()
+                .setToAddress(to)
+                .setToAssetsChainId(token0.getChainId())
+                .setToAssetsId(token0.getAssetId())
+                .setToAmount(amount0).endTo()
+                .newTo()
+                .setToAddress(to)
+                .setToAssetsChainId(token1.getChainId())
+                .setToAssetsId(token1.getAssetId())
+                .setToAmount(amount1).endTo();
+
+        Transaction sysDealTx = sysDeal.build();
+        return sysDealTx;
     }
 
     public RemoveLiquidityDTO getRemoveLiquidityInfo(int chainId, CoinData coinData) throws NulsException {
@@ -247,50 +238,6 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
         CoinFrom from = froms.get(0);
         byte[] userAddress = from.getAddress();
         return new RemoveLiquidityDTO(userAddress, pairAddress, to.getAmount());
-    }
-
-    public RemoveLiquidityBus calRemoveLiquidityBusiness(
-            int chainId, IPairFactory iPairFactory,
-            byte[] pairAddress, BigInteger liquidity,
-            NerveToken tokenA,
-            NerveToken tokenB,
-            BigInteger amountAMin,
-            BigInteger amountBMin) throws NulsException {
-        IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(pairAddress));
-        BigInteger[] reserves = pair.getReserves();
-        SwapPairPO pairPO = pair.getPair();
-        NerveToken token0 = pairPO.getToken0();
-        NerveToken token1 = pairPO.getToken1();
-        //TODO pierre 账本改造，获取balance0, balance1使用账本接口
-        BigInteger balance0 = reserves[0];
-        BigInteger balance1 = reserves[1];
-        BigInteger totalSupply = pair.totalSupply();
-        // 可赎回的资产
-        BigInteger amount0 = liquidity.multiply(balance0).divide(totalSupply);
-        BigInteger amount1 = liquidity.multiply(balance1).divide(totalSupply);
-        if (amount0.compareTo(BigInteger.ZERO) <= 0 || amount1.compareTo(BigInteger.ZERO) <= 0) {
-            throw new NulsException(INSUFFICIENT_LIQUIDITY_BURNED);
-        }
-
-        boolean firstTokenA = tokenA.equals(token0);
-        BigInteger amountA, amountB;
-        if (firstTokenA) {
-            amountA = amount0;
-            amountB = amount1;
-        } else {
-            amountA = amount1;
-            amountB = amount0;
-        }
-        if (amountA.compareTo(amountAMin) < 0) {
-            throw new NulsException(INSUFFICIENT_A_AMOUNT);
-        }
-        if (amountB.compareTo(amountBMin) < 0) {
-            throw new NulsException(INSUFFICIENT_B_AMOUNT);
-        }
-        RemoveLiquidityBus bus = new RemoveLiquidityBus(amount0, amount1, balance0, balance1, liquidity, pair, token0, token1);
-        bus.setPreBlockHeight(pair.getBlockHeightLast());
-        bus.setPreBlockTime(pair.getBlockTimeLast());
-        return bus;
     }
 
 }

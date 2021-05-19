@@ -24,9 +24,15 @@
 package network.nerve.swap.handler;
 
 import io.nuls.base.data.Transaction;
+import io.nuls.core.basic.Result;
+import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import io.nuls.core.exception.NulsException;
 import network.nerve.swap.constant.SwapErrorCode;
+import network.nerve.swap.manager.ChainManager;
+import network.nerve.swap.manager.LedgerTempBalanceManager;
+import network.nerve.swap.model.Chain;
+import network.nerve.swap.model.bo.BatchInfo;
 import network.nerve.swap.model.bo.SwapResult;
 
 import java.util.HashMap;
@@ -39,6 +45,9 @@ import java.util.Map;
 @Component
 public class SwapInvoker implements ISwapInvoker {
 
+    @Autowired
+    private ChainManager chainManager;
+
     private Map<Integer, ISwapHandler> map = new HashMap<>();
 
     @Override
@@ -50,8 +59,19 @@ public class SwapInvoker implements ISwapInvoker {
     public SwapResult invoke(int chainId, Transaction tx, long blockHeight, long blockTime) throws NulsException {
         ISwapHandler iSwapHandler = map.get(tx.getType());
         if (iSwapHandler == null) {
+            //TODO pierre 临时处理，根据测试情况，再考虑是否返回 NULL
             throw new NulsException(SwapErrorCode.NULL_PARAMETER);
         }
+        Chain chain = chainManager.getChain(chainId);
+        BatchInfo batchInfo = chain.getBatchInfo();
+        // 缓存高度必须一致
+        if (blockHeight != batchInfo.getCurrentBlockHeader().getHeight()) {
+            throw new NulsException(SwapErrorCode.BLOCK_HEIGHT_INCONSISTENCY);
+        }
+        // 刷新临时余额
+        LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
+        tempBalanceManager.refreshTempBalance(chainId, tx, blockTime);
+        // 执行交易业务
         return iSwapHandler.execute(chainId, tx, blockHeight, blockTime);
     }
 }

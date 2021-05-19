@@ -27,11 +27,14 @@ import io.nuls.base.basic.AddressTool;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import network.nerve.swap.cache.LedgerAssetCacher;
+import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.dto.LedgerAssetDTO;
+import network.nerve.swap.model.po.stable.StableSwapPairPo;
 import network.nerve.swap.model.po.SwapPairPO;
 import network.nerve.swap.rpc.call.LedgerCall;
 import network.nerve.swap.storage.SwapPairStorageService;
+import network.nerve.swap.storage.SwapStablePairStorageService;
 import network.nerve.swap.utils.SwapUtils;
 
 import static network.nerve.swap.constant.SwapConstant.LP_TOKEN_DECIMALS;
@@ -45,6 +48,8 @@ public class LedgerAssetRegisterHelper {
 
     @Autowired
     private SwapPairStorageService swapPairStorageService;
+    @Autowired
+    private SwapStablePairStorageService swapStablePairStorageService;
     @Autowired
     private LedgerAssetCacher ledgerAssetCacher;
 
@@ -68,6 +73,28 @@ public class LedgerAssetRegisterHelper {
         SwapPairPO pair = swapPairStorageService.getPair(assetAddress);
         LedgerCall.lpAssetDelete(pair.getTokenLP().getAssetId());
         swapPairStorageService.delelePair(assetAddress);
+        return pair;
+    }
+
+    public LedgerAssetDTO lpAssetRegForStable(int chainId, String pairAddress, NerveToken[] coins) throws Exception {
+        LedgerAssetDTO ledgerAsset0 = ledgerAssetCacher.getLedgerAsset(coins[0]);
+        String assetSymbol = SwapConstant.STABLE_PAIR + ledgerAsset0.getAssetSymbol();
+        String assetAddress = pairAddress;
+        Integer lpAssetId = LedgerCall.lpAssetReg(chainId, assetSymbol, LP_TOKEN_DECIMALS, assetSymbol, assetAddress);
+        byte[] assetAddressBytes = AddressTool.getAddress(assetAddress);
+        StableSwapPairPo po = new StableSwapPairPo(assetAddressBytes);
+        NerveToken tokenLP = new NerveToken(chainId, lpAssetId);
+        po.setTokenLP(tokenLP);
+        po.setCoins(coins);
+        swapStablePairStorageService.savePair(assetAddressBytes, po);
+        return new LedgerAssetDTO(chainId, lpAssetId, assetSymbol, assetSymbol, LP_TOKEN_DECIMALS);
+    }
+
+    public StableSwapPairPo deleteLpAssetForStable(int chainId, String pairAddress) throws Exception {
+        String assetAddress = pairAddress;
+        StableSwapPairPo pair = swapStablePairStorageService.getPair(assetAddress);
+        LedgerCall.lpAssetDelete(pair.getTokenLP().getAssetId());
+        swapStablePairStorageService.delelePair(assetAddress);
         return pair;
     }
 

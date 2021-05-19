@@ -70,7 +70,7 @@ public class AddLiquidityTxProcessor implements TransactionProcessor {
         List<Transaction> failsList = new ArrayList<>();
         String errorCode = SwapErrorCode.SUCCESS.getCode();
         for (Transaction tx : txs) {
-            if (tx.getType() != TxType.SWAP_ADD_LIQUIDITY) {
+            if (tx.getType() != getType()) {
                 logger.error("Tx type is wrong! hash-{}", tx.getHash().toHex());
                 failsList.add(tx);
                 errorCode = SwapErrorCode.DATA_ERROR.getCode();
@@ -99,11 +99,9 @@ public class AddLiquidityTxProcessor implements TransactionProcessor {
             try {
                 coinData = tx.getCoinDataInstance();
                 dto = addLiquidityHandler.getAddLiquidityInfo(chainId, coinData);
-                BigInteger[] reserves = SwapUtils.getReserves(chainId, iPairFactory, dto.getTokenA(), dto.getTokenB());
-                addLiquidityHandler.calcAddLiquidity(chainId, iPairFactory, dto.getTokenA(),dto.getTokenB(),
+                SwapUtils.calcAddLiquidity(chainId, iPairFactory, dto.getTokenA(),dto.getTokenB(),
                                 dto.getUserLiquidityA(), dto.getUserLiquidityB(),
-                                amountAMin, amountBMin,
-                                reserves[0], reserves[1]);
+                                amountAMin, amountBMin);
             } catch (NulsException e) {
                 Log.error(e);
                 failsList.add(tx);
@@ -111,7 +109,7 @@ public class AddLiquidityTxProcessor implements TransactionProcessor {
                 continue;
             }
         }
-        resultMap.put("txList", txs);
+        resultMap.put("txList", failsList);
         resultMap.put("errorCode", errorCode);
         return resultMap;
     }

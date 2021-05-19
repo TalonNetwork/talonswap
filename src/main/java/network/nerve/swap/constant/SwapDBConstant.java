@@ -38,4 +38,8 @@ public interface SwapDBConstant {
      */
     String DB_SWAP = "sw_table_";
 
+    String DB_NAME_FARM = DB_SWAP + "farm_";
+    String DB_NAME_FARM_USER = DB_SWAP + "farm_user_";
+
+    String DB_NAME_SWAP = DB_SWAP + "swap_";
 }

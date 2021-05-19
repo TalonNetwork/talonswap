@@ -30,9 +30,13 @@ import io.nuls.base.basic.AddressTool;
 import io.nuls.base.protocol.ModuleHelper;
 import io.nuls.base.protocol.ProtocolGroupManager;
 import io.nuls.base.protocol.RegisterHelper;
+import io.nuls.base.protocol.cmd.TransactionDispatcher;
+import io.nuls.core.constant.TxType;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
+import io.nuls.core.core.ioc.SpringLiteContext;
 import io.nuls.core.crypto.HexUtil;
+import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
 import io.nuls.core.parse.JSONUtils;
 import io.nuls.core.rockdb.service.RocksDBService;
@@ -48,9 +52,15 @@ import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.manager.ChainManager;
 import network.nerve.swap.model.Chain;
+import network.nerve.swap.rpc.call.BlockCall;
+import network.nerve.swap.rpc.call.TransactionCall;
+import network.nerve.swap.tx.common.TransactionCommitAdvice;
+import network.nerve.swap.tx.common.TransactionRollbackAdvice;
 
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -72,12 +82,13 @@ public class SwapBootstrap extends RpcModule {
 
     public static void main(String[] args) throws NoSuchFieldException, IllegalAccessException {
         initSys();
-        NulsRpcModuleBootstrap.run("io.nuls,network.nerve.swap", args);
+        NulsRpcModuleBootstrap.run("network.nerve.swap,io.nuls", args);
     }
 
     @Override
     public void init() {
         try {
+            super.init();
             //增加地址工具类初始化
             AddressTool.init(addressPrefixDatas);
             initDB();
@@ -85,7 +96,7 @@ public class SwapBootstrap extends RpcModule {
             chainManager.initChain();
             ModuleHelper.init(this);
         } catch (Exception e) {
-            Log.error("Converter init error!", e);
+            Log.error("module init error!", e);
             throw new RuntimeException(e);
         }
     }
@@ -93,10 +104,14 @@ public class SwapBootstrap extends RpcModule {
     @Override
     public boolean doStart() {
         try {
-            Log.info("Converter Ready...");
+            TransactionDispatcher dispatcher = SpringLiteContext.getBean(TransactionDispatcher.class);
+            TransactionCommitAdvice commitAdvice = SpringLiteContext.getBean(TransactionCommitAdvice.class);
+            TransactionRollbackAdvice rollbackAdvice = SpringLiteContext.getBean(TransactionRollbackAdvice.class);
+            dispatcher.register(commitAdvice, rollbackAdvice);
+            Log.info("module chain do start");
             return true;
         } catch (Exception e) {
-            Log.error("Converter init error!");
+            Log.error("module start error!");
             Log.error(e);
             return false;
         }
@@ -111,6 +126,8 @@ public class SwapBootstrap extends RpcModule {
             for (Chain chain : chainMap.values()) {
                 int chainId = chain.getConfig().getChainId();
                 boolean registerTx = RegisterHelper.registerTx(chainId, ProtocolGroupManager.getCurrentProtocol(chainId));
+                // 通知交易模块，SWAP模块的系统交易
+                setSwapGenerateTxTypes(chainId);
                 Log.info("register tx type to tx module, chain id is {}, result is {}", chainId, registerTx);
             }
         }
@@ -122,6 +139,10 @@ public class SwapBootstrap extends RpcModule {
             Log.info("register to protocol-update module");
         }
 
+        if (ModuleE.BL.abbr.equals(module.getName())) {
+            chainManager.getChainMap().values().forEach(BlockCall::subscriptionNewBlockHeight);
+            Log.info("subscription new block height");
+        }
     }
 
     @Override
@@ -184,6 +205,7 @@ public class SwapBootstrap extends RpcModule {
     private void initDB() throws Exception {
         // 数据文件存储地址
         RocksDBService.init(swapConfig.getPathRoot());
+
     }
 
     /**
@@ -192,5 +214,18 @@ public class SwapBootstrap extends RpcModule {
     private void initContext() {
         // 提现黑洞公钥
         SwapContext.BLACKHOLE_PUBKEY = HexUtil.decode(swapConfig.getBlackHolePublicKey());
+    }
+
+    private void setSwapGenerateTxTypes(int currentChainId) {
+        List<Integer> list = List.of(
+                TxType.SWAP_SYSTEM_DEAL,
+                TxType.SWAP_SYSTEM_REFUND);
+        List<Integer> resultList = new ArrayList<>();
+        resultList.addAll(list);
+        try {
+            TransactionCall.setSwapGenerateTxTypes(currentChainId, resultList);
+        } catch (NulsException e) {
+            Log.warn("获取智能合约生成交易类型异常", e);
+        }
     }
 }

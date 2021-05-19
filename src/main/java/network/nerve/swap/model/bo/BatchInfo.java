@@ -24,9 +24,13 @@
 package network.nerve.swap.model.bo;
 
 import io.nuls.base.data.BlockHeader;
+import network.nerve.swap.manager.FarmTempManager;
+import network.nerve.swap.manager.FarmUserInfoTempManager;
 import network.nerve.swap.manager.LedgerTempBalanceManager;
 import network.nerve.swap.manager.SwapTempPairManager;
+import network.nerve.swap.manager.stable.StableSwapTempPairManager;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -39,25 +43,35 @@ public class BatchInfo {
      * 临时余额
      */
     private LedgerTempBalanceManager ledgerTempBalanceManager;
+
     /**
      * 交易对临时缓存
      */
     private SwapTempPairManager swapTempPairManager;
     /**
+     * 稳定币交易对临时缓存
+     */
+    private StableSwapTempPairManager stableSwapTempPairManager;
+
+    private FarmTempManager farmTempManager;
+    private FarmUserInfoTempManager farmUserTempManager;
+
+    /**
      * 当前正在打包的区块头
      */
     private BlockHeader currentBlockHeader;
+
+    /**
+     * 前一个区块的stateRoot
+     */
+    private String preStateRoot;
     /**
      * 交易执行结果
      */
-    private Map<String, SwapResult> swapResultMap;
+    private Map<String, SwapResult> swapResultMap = new HashMap<>();
 
     public Map<String, SwapResult> getSwapResultMap() {
         return swapResultMap;
-    }
-
-    public void setSwapResultMap(Map<String, SwapResult> swapResultMap) {
-        this.swapResultMap = swapResultMap;
     }
 
     public LedgerTempBalanceManager getLedgerTempBalanceManager() {
@@ -82,5 +96,37 @@ public class BatchInfo {
 
     public void setSwapTempPairManager(SwapTempPairManager swapTempPairManager) {
         this.swapTempPairManager = swapTempPairManager;
+    }
+
+    public StableSwapTempPairManager getStableSwapTempPairManager() {
+        return stableSwapTempPairManager;
+    }
+
+    public void setStableSwapTempPairManager(StableSwapTempPairManager stableSwapTempPairManager) {
+        this.stableSwapTempPairManager = stableSwapTempPairManager;
+    }
+
+    public String getPreStateRoot() {
+        return preStateRoot;
+    }
+
+    public void setPreStateRoot(String preStateRoot) {
+        this.preStateRoot = preStateRoot;
+    }
+
+    public FarmTempManager getFarmTempManager() {
+        return farmTempManager;
+    }
+
+    public void setFarmTempManager(FarmTempManager farmTempManager) {
+        this.farmTempManager = farmTempManager;
+    }
+
+    public FarmUserInfoTempManager getFarmUserTempManager() {
+        return farmUserTempManager;
+    }
+
+    public void setFarmUserTempManager(FarmUserInfoTempManager farmUserTempManager) {
+        this.farmUserTempManager = farmUserTempManager;
     }
 }

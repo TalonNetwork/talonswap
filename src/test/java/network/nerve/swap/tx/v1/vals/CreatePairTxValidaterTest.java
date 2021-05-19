@@ -9,6 +9,7 @@ import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.ValidaterResult;
 import network.nerve.swap.model.dto.SwapPairDTO;
+import network.nerve.swap.utils.NerveCallback;
 import network.nerve.swap.utils.SwapUtils;
 import org.junit.Test;
 
@@ -31,8 +32,8 @@ public class CreatePairTxValidaterTest {
         validater.setCacher(cacher);
 
         List<JunitCase> items = new ArrayList<>();
-        items.add(new JunitCase("case0",validater, new Object[]{address}, ValidaterResult.getFailed(SwapErrorCode.PAIR_ALREADY_EXISTS), false, null, "交易对已存在时的测试"));
-        items.add(new JunitCase("case1",validater, new Object[]{address1}, ValidaterResult.getSuccess(), false, null, "交易对不存在时的测试"));
+        items.add(new JunitCase("case0",validater, new Object[]{address}, ValidaterResult.getFailed(SwapErrorCode.PAIR_ALREADY_EXISTS), false, null, NerveCallback.NULL_CALLBACK));
+        items.add(new JunitCase("case1",validater, new Object[]{address1}, ValidaterResult.getSuccess(), false, null, NerveCallback.NULL_CALLBACK));
         JunitExecuter<CreatePairTxValidater> executer = new JunitExecuter<>() {
             @Override
             public Object execute(JunitCase<CreatePairTxValidater> junitCase) {

@@ -9,9 +9,9 @@ import java.util.List;
  */
 public interface FarmStorageService {
 
-    FarmPoolPO save(FarmPoolPO po);
+    FarmPoolPO save(int chainId, FarmPoolPO po);
 
-    FarmPoolPO delete(byte[] hash);
+    boolean delete(int chainId, byte[] hash);
 
-    List<FarmPoolPO> getList();
+    List<FarmPoolPO> getList(int chainId);
 }

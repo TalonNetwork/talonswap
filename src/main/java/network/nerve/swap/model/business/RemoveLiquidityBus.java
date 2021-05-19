@@ -139,4 +139,21 @@ public class RemoveLiquidityBus extends BaseBus {
     public void setToken1(NerveToken token1) {
         this.token1 = token1;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("{");
+        sb.append("\"amount0\":")
+                .append(amount0);
+        sb.append(",\"amount1\":")
+                .append(amount1);
+        sb.append(",\"reserve0\":")
+                .append(reserve0);
+        sb.append(",\"reserve1\":")
+                .append(reserve1);
+        sb.append(",\"liquidity\":")
+                .append(liquidity);
+        sb.append('}');
+        return sb.toString();
+    }
 }

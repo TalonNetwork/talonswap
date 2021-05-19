@@ -77,7 +77,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
         String errorCode = SwapErrorCode.SUCCESS.getCode();
         C1:
         for (Transaction tx : txs) {
-            if (tx.getType() != TxType.SWAP_TRADE) {
+            if (tx.getType() != getType()) {
                 logger.error("Tx type is wrong! hash-{}", tx.getHash().toHex());
                 failsList.add(tx);
                 errorCode = SwapErrorCode.DATA_ERROR.getCode();
@@ -100,8 +100,15 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
                 continue;
             }
             NerveToken[] path = txData.getPath();
+            int pathLength = path.length;
+            if (pathLength < 2) {
+                logger.error("INVALID_PATH! hash-{}", tx.getHash().toHex());
+                failsList.add(tx);
+                errorCode = SwapErrorCode.INVALID_PATH.getCode();
+                continue;
+            }
             int length = path.length;
-            for (int i=0;i<length;i++) {
+            for (int i = 0; i < length; i++) {
                 NerveToken token = path[i];
                 LedgerAssetDTO asset = ledgerAssetCacher.getLedgerAsset(token);
                 if (asset == null) {
@@ -126,13 +133,13 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
             try {
                 coinData = tx.getCoinDataInstance();
                 dto = swapTokenHandler.getSwapTradeInfo(chainId, coinData);
-                if (!swapPairCacher.isExist(AddressTool.getStringAddressByBytes(dto.getPairAddress()))) {
+                if (!swapPairCacher.isExist(AddressTool.getStringAddressByBytes(dto.getFirstPairAddress()))) {
                     logger.error("PAIR_NOT_EXIST! hash-{}", tx.getHash().toHex());
                     failsList.add(tx);
                     errorCode = SwapErrorCode.PAIR_NOT_EXIST.getCode();
                     continue;
                 }
-                if (!Arrays.equals(SwapUtils.getPairAddress(chainId, path[0], path[1]), dto.getPairAddress())) {
+                if (!Arrays.equals(SwapUtils.getPairAddress(chainId, path[0], path[1]), dto.getFirstPairAddress())) {
                     logger.error("PAIR_INCONSISTENCY! hash-{}", tx.getHash().toHex());
                     failsList.add(tx);
                     errorCode = SwapErrorCode.PAIR_INCONSISTENCY.getCode();
@@ -147,7 +154,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
                 continue;
             }
         }
-        resultMap.put("txList", txs);
+        resultMap.put("txList", failsList);
         resultMap.put("errorCode", errorCode);
         return resultMap;
     }
@@ -208,7 +215,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
                 List<TradePairBus> busList = bus.getTradePairBuses();
                 for (TradePairBus pairBus : busList) {
                     IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(pairBus.getPairAddress()));
-                    pair.rollback(BigInteger.ZERO, pairBus.getReserve0(), pairBus.getReserve1(), bus.getPreBlockHeight(), bus.getPreBlockTime());
+                    pair.rollback(BigInteger.ZERO, pairBus.getReserve0(), pairBus.getReserve1(), pairBus.getPreBlockHeight(), pairBus.getPreBlockTime());
                 }
                 swapExecuteResultStorageService.delete(chainId, tx.getHash());
             }

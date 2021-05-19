@@ -36,4 +36,6 @@ public interface IPairFactory {
      * 一种是从缓存中获取（缓存生命周期: 一个区块从第一个交易开始到最后一个交易结束）
      */
     IPair getPair(String pairAddress);
+
+    IStablePair getStablePair(String pairAddress);
 }

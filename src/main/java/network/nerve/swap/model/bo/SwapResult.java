@@ -112,4 +112,6 @@ public class SwapResult {
     public void setSubTx(Transaction subTx) {
         this.subTx = subTx;
     }
+
+
 }

@@ -38,8 +38,7 @@ import network.nerve.swap.model.bo.SwapResult;
 import network.nerve.swap.model.txdata.CreatePairData;
 import network.nerve.swap.utils.SwapUtils;
 
-import static network.nerve.swap.constant.SwapErrorCode.IDENTICAL_ADDRESSES;
-import static network.nerve.swap.constant.SwapErrorCode.PAIR_ALREADY_EXISTS;
+import static network.nerve.swap.constant.SwapErrorCode.*;
 
 /**
  * @author: PierreLuo
@@ -72,7 +71,7 @@ public class CreatePairHandler extends SwapHandlerConstraints {
             CreatePairData txData = new CreatePairData();
             txData.parse(tx.getTxData(), 0);
             if (txData.getToken0().equals(txData.getToken1())) {
-                throw new NulsException(IDENTICAL_ADDRESSES);
+                throw new NulsException(IDENTICAL_TOKEN);
             }
             String address = SwapUtils.getStringPairAddress(chainId, txData.getToken0(), txData.getToken1());
             SwapTempPairManager swapTempPairManager = batchInfo.getSwapTempPairManager();

@@ -26,13 +26,18 @@ package network.nerve.swap.help.impl;
 import io.nuls.base.basic.AddressTool;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
+import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.help.IPair;
 import network.nerve.swap.help.IPairFactory;
+import network.nerve.swap.help.IStablePair;
+import network.nerve.swap.help.impl.stable.TemporaryStablePair;
 import network.nerve.swap.manager.ChainManager;
 import network.nerve.swap.manager.SwapTempPairManager;
+import network.nerve.swap.manager.stable.StableSwapTempPairManager;
 import network.nerve.swap.model.Chain;
 import network.nerve.swap.model.bo.BatchInfo;
 import network.nerve.swap.model.dto.SwapPairDTO;
+import network.nerve.swap.model.dto.stable.StableSwapPairDTO;
 
 /**
  * @author: PierreLuo
@@ -58,5 +63,21 @@ public class TemporaryPairFactory implements IPairFactory {
             return null;
         }
         return new TemporaryPair(swapPairDTO);
+    }
+
+    @Override
+    public IStablePair getStablePair(String pairAddress) {
+        int chainId = AddressTool.getChainIdByAddress(pairAddress);
+        Chain chain = chainManager.getChain(chainId);
+        BatchInfo batchInfo = chain.getBatchInfo();
+        StableSwapTempPairManager stableSwapTempPairManager;
+        if (batchInfo == null || (stableSwapTempPairManager = batchInfo.getStableSwapTempPairManager()) == null) {
+            return null;
+        }
+        StableSwapPairDTO stableSwapPairDTO = stableSwapTempPairManager.get(pairAddress);
+        if (stableSwapPairDTO == null) {
+            return null;
+        }
+        return new TemporaryStablePair(stableSwapPairDTO);
     }
 }

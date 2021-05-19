@@ -2,22 +2,21 @@ package network.nerve.swap.storage;
 
 import network.nerve.swap.model.po.SwapPairPO;
 
-import java.util.List;
-
 /**
  * @author Niels
  */
 public interface SwapPairStorageService {
-    boolean savePair(byte[] address, SwapPairPO po);
-    boolean savePair(String address, SwapPairPO po);
+
+    boolean savePair(byte[] address, SwapPairPO po) throws Exception;
+
+    boolean savePair(String address, SwapPairPO po) throws Exception;
 
     SwapPairPO getPair(byte[] address);
+
     SwapPairPO getPair(String address);
 
-    boolean delelePair(byte[] address);
-    boolean delelePair(String address);
+    boolean delelePair(byte[] address) throws Exception;
 
-    List<SwapPairPO> getList();
-
+    boolean delelePair(String address) throws Exception;
 
 }

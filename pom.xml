@@ -22,6 +22,7 @@
             <groupId>network.nerve</groupId>
             <artifactId>nuls-base-protocol-update</artifactId>
             <version>${nuls.v2.version}</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -33,7 +34,7 @@
         <dependency>
             <groupId>io.protostuff</groupId>
             <artifactId>protostuff-runtime</artifactId>
-            <version>1.6.0</version>
+            <version>1.7.2</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

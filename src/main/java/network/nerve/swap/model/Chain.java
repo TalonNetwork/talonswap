@@ -22,10 +22,13 @@ public class Chain {
 
     private ConfigBean config;
 
+    private Long bestHeight;
+
     /**
      * 日志
      */
     private NulsLogger logger;
+
     /**
      * 打包区块时批量执行信息
      */
@@ -67,6 +70,14 @@ public class Chain {
         SwapContext.logger.error("Setting value error. Unkown blockType! - [{}]", blockType);
     }
 
+    public static void putCurrentThreadBlockType(Integer blockType) {
+        currentThreadBlockType.set(blockType);
+    }
+
+    public static Integer currentThreadBlockType() {
+        return currentThreadBlockType.get();
+    }
+
     public ConfigBean getConfig() {
         return config;
     }
@@ -87,4 +98,11 @@ public class Chain {
         return config.getChainId();
     }
 
+    public Long getBestHeight() {
+        return bestHeight;
+    }
+
+    public void setBestHeight(Long bestHeight) {
+        this.bestHeight = bestHeight;
+    }
 }

@@ -30,9 +30,11 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.log.Log;
 import io.nuls.core.rockdb.constant.DBErrorCode;
 import io.nuls.core.rockdb.service.RocksDBService;
+import network.nerve.swap.cache.impl.FarmCacherImpl;
 import network.nerve.swap.config.ConfigBean;
 import network.nerve.swap.config.SwapConfig;
 import network.nerve.swap.constant.SwapDBConstant;
+import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.model.Chain;
 import network.nerve.swap.utils.ChainLoggerUtil;
 
@@ -53,7 +55,7 @@ public class ChainManager {
 
     @Autowired
     private SwapConfig swapConfig;
-    @Autowired
+
     private Map<Integer, Chain> chainMap = new ConcurrentHashMap<>();
 
     /**
@@ -71,17 +73,23 @@ public class ChainManager {
             chain.setConfig(entry.getValue());
             initLogger(chain);
             initTable(chain);
+            initCache(chain);
             chainMap.put(chainId, chain);
             chain.getLogger().debug("Chain:{} init success..", chainId);
             ProtocolLoader.load(chainId);
         }
     }
 
+    private void initCache(Chain chain) {
+        FarmCacherImpl.init(chain);
+    }
+
     private void initTable(Chain chain) {
         int chainId = chain.getConfig().getChainId();
         try {
-            //TODO pierre 初始化表
-            RocksDBService.createTable(SwapDBConstant.DB_SWAP + chainId);
+            RocksDBService.createTable(SwapDBConstant.DB_NAME_SWAP + chainId);
+            RocksDBService.createTable(SwapDBConstant.DB_NAME_FARM + chainId);
+            RocksDBService.createTable(SwapDBConstant.DB_NAME_FARM_USER + chainId);
 
         } catch (Exception e) {
             if (!DBErrorCode.DB_TABLE_EXIST.equals(e.getMessage())) {
@@ -122,6 +130,12 @@ public class ChainManager {
 
     private void initLogger(Chain chain) {
         ChainLoggerUtil.init(chain);
+        SwapContext.logger = chain.getLogger();
+    }
+
+    public static void chainHandle(int chainId, int blockType) {
+        // 设置交易模块请求区块处理模式, 打包区块 - 0, 验证区块 - 1
+        Chain.putCurrentThreadBlockType(blockType);
     }
 
     public Map<Integer, Chain> getChainMap() {

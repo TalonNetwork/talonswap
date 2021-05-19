@@ -16,10 +16,8 @@ import java.math.BigInteger;
  */
 public class RemoveLiquidityData extends BaseNulsData {
 
-    private int assetChainIdA;
-    private int assetIdA;
-    private int assetChainIdB;
-    private int assetIdB;
+    private NerveToken tokenA;
+    private NerveToken tokenB;
     private byte[] to;
     private long deadline;
     private BigInteger amountAMin;
@@ -27,10 +25,8 @@ public class RemoveLiquidityData extends BaseNulsData {
 
     @Override
     protected void serializeToStream(NulsOutputStreamBuffer stream) throws IOException {
-        stream.writeUint16(assetChainIdA);
-        stream.writeUint16(assetIdA);
-        stream.writeUint16(assetChainIdB);
-        stream.writeUint16(assetIdB);
+        stream.writeNulsData(tokenA);
+        stream.writeNulsData(tokenB);
         stream.write(to);
         stream.writeUint32(deadline);
         stream.writeBigInteger(amountAMin);
@@ -39,10 +35,8 @@ public class RemoveLiquidityData extends BaseNulsData {
 
     @Override
     public void parse(NulsByteBuffer byteBuffer) throws NulsException {
-        this.assetChainIdA = byteBuffer.readUint16();
-        this.assetIdA = byteBuffer.readUint16();
-        this.assetChainIdB = byteBuffer.readUint16();
-        this.assetIdB = byteBuffer.readUint16();
+        this.tokenA = byteBuffer.readNulsData(new NerveToken());
+        this.tokenB = byteBuffer.readNulsData(new NerveToken());
         this.to = byteBuffer.readBytes(Address.ADDRESS_LENGTH);
         this.deadline = byteBuffer.readUint32();
         this.amountAMin = byteBuffer.readBigInteger();
@@ -51,7 +45,9 @@ public class RemoveLiquidityData extends BaseNulsData {
 
     @Override
     public int size() {
-        int size = 8;
+        int size = 0;
+        size += tokenA.size();
+        size += tokenB.size();
         size += Address.ADDRESS_LENGTH;
         size += SerializeUtils.sizeOfUint32();
         size += SerializeUtils.sizeOfBigInteger();
@@ -59,36 +55,20 @@ public class RemoveLiquidityData extends BaseNulsData {
         return size;
     }
 
-    public int getAssetChainIdA() {
-        return assetChainIdA;
+    public NerveToken getTokenA() {
+        return tokenA;
     }
 
-    public void setAssetChainIdA(int assetChainIdA) {
-        this.assetChainIdA = assetChainIdA;
+    public void setTokenA(NerveToken tokenA) {
+        this.tokenA = tokenA;
     }
 
-    public int getAssetIdA() {
-        return assetIdA;
+    public NerveToken getTokenB() {
+        return tokenB;
     }
 
-    public void setAssetIdA(int assetIdA) {
-        this.assetIdA = assetIdA;
-    }
-
-    public int getAssetChainIdB() {
-        return assetChainIdB;
-    }
-
-    public void setAssetChainIdB(int assetChainIdB) {
-        this.assetChainIdB = assetChainIdB;
-    }
-
-    public int getAssetIdB() {
-        return assetIdB;
-    }
-
-    public void setAssetIdB(int assetIdB) {
-        this.assetIdB = assetIdB;
+    public void setTokenB(NerveToken tokenB) {
+        this.tokenB = tokenB;
     }
 
     public byte[] getTo() {

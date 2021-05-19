@@ -23,10 +23,8 @@
  */
 package network.nerve.swap.cache.impl;
 
-import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.manager.ChainManager;
 import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.dto.LedgerAssetDTO;
 import network.nerve.swap.rpc.call.LedgerCall;

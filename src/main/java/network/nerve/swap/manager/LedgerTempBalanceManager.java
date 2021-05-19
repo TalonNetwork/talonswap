@@ -28,6 +28,7 @@ import io.nuls.base.basic.AddressTool;
 import io.nuls.base.data.*;
 import io.nuls.core.basic.Result;
 import io.nuls.core.exception.NulsException;
+import io.nuls.core.exception.NulsRuntimeException;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.context.SwapContext;
@@ -35,7 +36,6 @@ import network.nerve.swap.model.bo.LedgerBalance;
 import network.nerve.swap.model.bo.NonceBalance;
 import network.nerve.swap.rpc.call.LedgerCall;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -50,8 +50,8 @@ import static network.nerve.swap.utils.SwapUtils.asStringByBase64;
  */
 public class LedgerTempBalanceManager {
 
-    private int chainId;
-    private Map<String, LedgerBalance> tempBalanceMap;
+    protected int chainId;
+    protected Map<String, LedgerBalance> tempBalanceMap;
 
     public static LedgerTempBalanceManager newInstance(int chainId) {
         LedgerTempBalanceManager temp = new LedgerTempBalanceManager();
@@ -89,6 +89,19 @@ public class LedgerTempBalanceManager {
 
     }
 
+
+    public void addTempBalanceForTest(byte[] address, BigInteger amount, int assetChainId, int assetId) {
+        LedgerBalance ledgerBalance = LedgerBalance.newInstance();
+        ledgerBalance.setBalance(amount);
+        ledgerBalance.setFreeze(BigInteger.ZERO);
+        ledgerBalance.setAddress(address);
+        ledgerBalance.setAssetsId(assetId);
+        ledgerBalance.setAssetsChainId(assetChainId);
+        ledgerBalance.setNonce(new byte[8]);
+        ledgerBalance.setPreNonce(new byte[8]);
+        this.tempBalanceMap.put(balanceKey(address,assetChainId,assetId),ledgerBalance);
+    }
+
     public void addTempBalance(byte[] address, BigInteger amount, int assetChainId, int assetId) {
         LedgerBalance ledgerBalance = tempBalanceMap.get(balanceKey(address, assetChainId,  assetId));
         if (ledgerBalance != null) {
@@ -103,16 +116,30 @@ public class LedgerTempBalanceManager {
         }
     }
 
-    public void refreshTempBalance(int chainId, Transaction tx) throws NulsException {
-        NulsHash hash = null;
-        try {
-            hash = NulsHash.calcHash(tx.serializeForHash());
-        } catch (IOException e) {
-            throw new NulsException(SwapErrorCode.IO_ERROR);
+    public void addLockedTempBalance(byte[] address, BigInteger amount, int assetChainId, int assetId) {
+        LedgerBalance ledgerBalance = tempBalanceMap.get(balanceKey(address, assetChainId,  assetId));
+        if (ledgerBalance != null) {
+            ledgerBalance.addLockedTemp(amount);
         }
+    }
+
+    public void minusLockedTempBalance(byte[] address, BigInteger amount, int assetChainId, int assetId) {
+        LedgerBalance ledgerBalance = tempBalanceMap.get(balanceKey(address, assetChainId,  assetId));
+        if (ledgerBalance != null) {
+            ledgerBalance.minusLockedTemp(amount);
+        }
+    }
+
+    public void refreshTempBalance(int chainId, Transaction tx, long blockTime) {
+        NulsHash hash = tx.getHash();
         byte[] hashBytes = hash.getBytes();
         byte[] currentNonceBytes = Arrays.copyOfRange(hashBytes, hashBytes.length - 8, hashBytes.length);
-        CoinData coinData = tx.getCoinDataInstance();
+        CoinData coinData;
+        try {
+            coinData = tx.getCoinDataInstance();
+        } catch (NulsException e) {
+            throw new NulsRuntimeException(e);
+        }
         List<CoinFrom> froms = coinData.getFrom();
         List<CoinTo> tos = coinData.getTo();
         byte[] address;
@@ -123,11 +150,15 @@ public class LedgerTempBalanceManager {
             assetId = from.getAssetsId();
             Result<LedgerBalance> balanceResult = getBalance(address, assetChainId, assetId);
             if (balanceResult.isFailed()) {
-                throw new NulsException(balanceResult.getErrorCode());
+                throw new NulsRuntimeException(balanceResult.getErrorCode());
             }
             LedgerBalance ledgerBalance = balanceResult.getData();
-            ledgerBalance.minusTemp(from.getAmount());
             ledgerBalance.setNonce(currentNonceBytes);
+            if (isLockedAmount(blockTime, from.getLocked())) {
+                ledgerBalance.minusLockedTemp(from.getAmount());
+            } else {
+                ledgerBalance.minusTemp(from.getAmount());
+            }
         }
         for (CoinTo to : tos) {
             address = to.getAddress();
@@ -135,14 +166,28 @@ public class LedgerTempBalanceManager {
             assetId = to.getAssetsId();
             Result<LedgerBalance> balanceResult = getBalance(address, assetChainId, assetId);
             if (balanceResult.isFailed()) {
-                throw new NulsException(balanceResult.getErrorCode());
+                throw new NulsRuntimeException(balanceResult.getErrorCode());
             }
             LedgerBalance ledgerBalance = balanceResult.getData();
-            ledgerBalance.addTemp(to.getAmount());
+            if (isLockedAmount(blockTime, to.getLockTime())) {
+                ledgerBalance.addLockedTemp(to.getAmount());
+            } else {
+                ledgerBalance.addTemp(to.getAmount());
+            }
         }
     }
 
-    private String balanceKey(byte[] address, int assetChainId, int assetId) {
+    protected String balanceKey(byte[] address, int assetChainId, int assetId) {
         return new StringBuilder(chainId).append(asStringByBase64(address)).append(SwapConstant.LINE).append(assetChainId).append(SwapConstant.LINE).append(assetId).toString();
+    }
+
+    protected boolean isLockedAmount(long blockTime, long lockTime) {
+        if(lockTime < 0) {
+            return true;
+        }
+        if(blockTime < lockTime) {
+            return true;
+        }
+        return false;
     }
 }

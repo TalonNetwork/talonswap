@@ -24,8 +24,12 @@
 package network.nerve.swap.model.bo;
 
 
+import io.nuls.base.basic.AddressTool;
+import io.nuls.core.crypto.HexUtil;
+
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import static network.nerve.swap.utils.SwapUtils.minus;
 
@@ -43,7 +47,7 @@ public class LedgerBalance implements Serializable {
     private BigInteger freeze;
     private byte[] nonce;
     /**
-     * 存储连续交易的第一个交易的nonce，用于回滚连续交易(当连续交易发生错误，那么这一次连续交易全部回滚)
+     * 存储连续交易的第一个交易的nonce，用于回滚连续交易(//TODO pierre 暂时不用，依据测试情况考虑回滚问题)
      */
     private byte[] preNonce;
 
@@ -130,5 +134,26 @@ public class LedgerBalance implements Serializable {
 
     public void setPreNonce(byte[] preNonce) {
         this.preNonce = preNonce;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("{");
+        sb.append("\"address\":")
+                .append("'").append(AddressTool.getStringAddressByBytes(address)).append("'");
+        sb.append(",\"assetsChainId\":")
+                .append(assetsChainId);
+        sb.append(",\"assetsId\":")
+                .append(assetsId);
+        sb.append(",\"balance\":")
+                .append("'").append(balance).append("'");
+        sb.append(",\"freeze\":")
+                .append("'").append(freeze).append("'");
+        sb.append(",\"nonce\":")
+                .append("'").append(nonce == null ? "" : HexUtil.encode(nonce)).append("'");
+        sb.append(",\"preNonce\":")
+                .append("'").append(preNonce == null ? "" : HexUtil.encode(preNonce)).append("'");
+        sb.append('}');
+        return sb.toString();
     }
 }

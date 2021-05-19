@@ -37,6 +37,7 @@ import io.nuls.core.exception.NulsRuntimeException;
 import io.nuls.core.log.Log;
 import network.nerve.swap.cache.SwapPairCacher;
 import network.nerve.swap.constant.SwapErrorCode;
+import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.handler.ISwapInvoker;
 import network.nerve.swap.handler.SwapHandlerConstraints;
 import network.nerve.swap.help.IPair;
@@ -60,9 +61,11 @@ import network.nerve.swap.utils.SwapUtils;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static network.nerve.swap.constant.SwapConstant.*;
+import static network.nerve.swap.constant.SwapErrorCode.INVALID_PATH;
 
 /**
  * @author: PierreLuo
@@ -96,6 +99,8 @@ public class SwapTokenHandler extends SwapHandlerConstraints {
         BatchInfo batchInfo = chainManager.getChain(chainId).getBatchInfo();
         SwapTradeDTO dto = null;
         try {
+            CoinData coinData = tx.getCoinDataInstance();
+            dto = getSwapTradeInfo(chainId, coinData);
             // 提取业务参数
             SwapTradeData txData = new SwapTradeData();
             txData.parse(tx.getTxData(), 0);
@@ -103,14 +108,21 @@ public class SwapTokenHandler extends SwapHandlerConstraints {
             if (blockTime > deadline) {
                 throw new NulsException(SwapErrorCode.EXPIRED);
             }
-            CoinData coinData = tx.getCoinDataInstance();
-            dto = getSwapTradeInfo(chainId, coinData);
+            // 检查firstPairAddress是否和path中的一致
+            NerveToken[] path = txData.getPath();
+            int pathLength = path.length;
+            if (pathLength < 2) {
+                throw new NulsException(INVALID_PATH);
+            }
+            if (!Arrays.equals(SwapUtils.getPairAddress(chainId, path[0], path[1]), dto.getFirstPairAddress())) {
+                throw new NulsException(SwapErrorCode.PAIR_INCONSISTENCY);
+            }
             // 用户卖出的资产数量
             BigInteger amountIn = dto.getAmountIn();
 
             // 整合计算数据
             SwapTradeBus bus = calSwapTradeBusiness(chainId, iPairFactory, amountIn,
-                    txData.getTo(), txData.getPath(), txData.getAmountOutMin());
+                    txData.getTo(), path, txData.getAmountOutMin());
             // 装填执行结果
             result.setTxType(txType());
             result.setSuccess(true);
@@ -119,36 +131,19 @@ public class SwapTokenHandler extends SwapHandlerConstraints {
             result.setBlockHeight(blockHeight);
             result.setBusiness(HexUtil.encode(SwapDBUtil.getModelSerialize(bus)));
             // 组装系统成交交易
-            List<TradePairBus> busList = bus.getTradePairBuses();
-            SwapSystemDealTransaction sysDeal = new SwapSystemDealTransaction(tx.getHash().toHex(), blockTime);
             LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
-            for (TradePairBus pairBus : busList) {
-                NerveToken tokenOut = pairBus.getTokenOut();
-                BigInteger amountOut = pairBus.getAmountOut();
-                LedgerBalance ledgerBalanceOut = tempBalanceManager.getBalance(dto.getPairAddress(), tokenOut.getChainId(), tokenOut.getAssetId()).getData();
-                sysDeal.newFrom()
-                        .setFrom(ledgerBalanceOut, amountOut).endFrom()
-                       .newTo()
-                        .setToAddress(txData.getTo())
-                        .setToAssetsChainId(tokenOut.getChainId())
-                        .setToAssetsId(tokenOut.getAssetId())
-                        .setToAmount(amountOut).endTo();
-            }
-            Transaction sysDealTx = sysDeal.build();
+            Transaction sysDealTx = this.makeSystemDealTx(bus, tx.getHash().toHex(), blockTime, tempBalanceManager, txData.getFeeTo());
             result.setSubTx(sysDealTx);
-            try {
-                result.setSubTxStr(HexUtil.encode(sysDealTx.serialize()));
-            } catch (IOException e) {
-                throw new NulsException(SwapErrorCode.IO_ERROR, e);
-            }
+            result.setSubTxStr(SwapUtils.tx2Hex(sysDealTx));
             // 更新临时余额
-            tempBalanceManager.refreshTempBalance(chainId, sysDealTx);
+            tempBalanceManager.refreshTempBalance(chainId, sysDealTx, blockTime);
             // 更新临时数据
+            List<TradePairBus> busList = bus.getTradePairBuses();
             for (TradePairBus pairBus : busList) {
                 IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(pairBus.getPairAddress()));
                 pair.update(BigInteger.ZERO, pairBus.getBalance0(), pairBus.getBalance1(), pairBus.getReserve0(), pairBus.getReserve1(), blockHeight, blockTime);
             }
-        } catch (NulsException e) {
+        } catch (Exception e) {
             Log.error(e);
             // 装填失败的执行结果
             result.setTxType(txType());
@@ -156,14 +151,17 @@ public class SwapTokenHandler extends SwapHandlerConstraints {
             result.setHash(tx.getHash().toHex());
             result.setTxTime(tx.getTime());
             result.setBlockHeight(blockHeight);
-            result.setErrorMessage(e.format());
+            result.setErrorMessage(e instanceof NulsException ? ((NulsException) e).format() : e.getMessage());
 
+            if (dto == null) {
+                return result;
+            }
             // 组装系统退还交易
             SwapSystemRefundTransaction refund = new SwapSystemRefundTransaction(tx.getHash().toHex(), blockTime);
             NerveToken tokenIn = dto.getTokenIn();
             BigInteger amountIn = dto.getAmountIn();
             LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
-            LedgerBalance ledgerBalanceIn = tempBalanceManager.getBalance(dto.getPairAddress(), tokenIn.getChainId(), tokenIn.getAssetId()).getData();
+            LedgerBalance ledgerBalanceIn = tempBalanceManager.getBalance(dto.getFirstPairAddress(), tokenIn.getChainId(), tokenIn.getAssetId()).getData();
             Transaction refundTx =
                     refund.newFrom()
                             .setFrom(ledgerBalanceIn, amountIn).endFrom()
@@ -174,21 +172,70 @@ public class SwapTokenHandler extends SwapHandlerConstraints {
                             .setToAmount(amountIn).endTo()
                           .build();
             result.setSubTx(refundTx);
-            try {
-                String refundTxStr = HexUtil.encode(refundTx.serialize());
-                result.setSubTxStr(refundTxStr);
-            } catch (IOException e2) {
-                throw new NulsRuntimeException(SwapErrorCode.IO_ERROR, e2);
-            }
+            String refundTxStr = SwapUtils.tx2Hex(refundTx);
+            result.setSubTxStr(refundTxStr);
             // 更新临时余额
-            try {
-                tempBalanceManager.refreshTempBalance(chainId, refundTx);
-            } catch (NulsException e3) {
-                throw new NulsRuntimeException(e3.getErrorCode(), e3);
+            tempBalanceManager.refreshTempBalance(chainId, refundTx, blockTime);
+        } finally {
+            batchInfo.getSwapResultMap().put(tx.getHash().toHex(), result);
+        }
+        return result;
+    }
+
+    private Transaction makeSystemDealTx(SwapTradeBus bus, String orginTxHash, long blockTime, LedgerTempBalanceManager tempBalanceManager, byte[] feeTo) {
+        List<TradePairBus> busList = bus.getTradePairBuses();
+        SwapSystemDealTransaction sysDeal = new SwapSystemDealTransaction(orginTxHash, blockTime);
+        for (TradePairBus pairBus : busList) {
+            NerveToken tokenOut = pairBus.getTokenOut();
+            BigInteger amountOut = pairBus.getAmountOut();
+            LedgerBalance ledgerBalanceOut = tempBalanceManager.getBalance(pairBus.getPairAddress(), tokenOut.getChainId(), tokenOut.getAssetId()).getData();
+            sysDeal.newFrom()
+                    .setFrom(ledgerBalanceOut, amountOut).endFrom()
+                   .newTo()
+                    .setToAddress(pairBus.getTo())
+                    .setToAssetsChainId(tokenOut.getChainId())
+                    .setToAssetsId(tokenOut.getAssetId())
+                    .setToAmount(amountOut).endTo();
+            /** 计算手续费分配 */
+            NerveToken tokenIn = pairBus.getTokenIn();
+            LedgerBalance ledgerBalanceFeeOut = tempBalanceManager.getBalance(pairBus.getPairAddress(), tokenIn.getChainId(), tokenIn.getAssetId()).getData();
+            BigInteger amountIn = pairBus.getAmountIn();
+            // `非`流动性提供者可奖励的交易手续费
+            BigInteger unLiquidityAwardFee = pairBus.getUnLiquidityAwardFee();
+            sysDeal.newFrom()
+                    .setFrom(ledgerBalanceFeeOut, unLiquidityAwardFee).endFrom();
+            // 系统地址的手续费奖励
+            BigInteger systemAwardFee;
+            // 当前交易的指定地址的手续费奖励
+            BigInteger assignAddrAwardFee;
+            if (feeTo == null) {
+                // 交易未指定手续费奖励地址，则这部分手续费奖励分发给系统地址
+                systemAwardFee = unLiquidityAwardFee;
+                sysDeal.newTo()
+                        .setToAddress(SwapContext.AWARD_FEE_SYSTEM_ADDRESS)
+                        .setToAssetsChainId(tokenIn.getChainId())
+                        .setToAssetsId(tokenIn.getAssetId())
+                        .setToAmount(systemAwardFee).endTo();
+            } else {
+                // 其中奖励给系统的交易手续费
+                systemAwardFee = unLiquidityAwardFee.multiply(SwapContext.FEE_PERCENT_SYSTEM_RECEIVE).divide(BI_100);
+                // 其中奖励给当前交易指定地址的交易手续费
+                assignAddrAwardFee = unLiquidityAwardFee.subtract(systemAwardFee);
+                sysDeal.newTo()
+                        .setToAddress(SwapContext.AWARD_FEE_SYSTEM_ADDRESS)
+                        .setToAssetsChainId(tokenIn.getChainId())
+                        .setToAssetsId(tokenIn.getAssetId())
+                        .setToAmount(systemAwardFee).endTo()
+                       .newTo()
+                        .setToAddress(feeTo)
+                        .setToAssetsChainId(tokenIn.getChainId())
+                        .setToAssetsId(tokenIn.getAssetId())
+                        .setToAmount(assignAddrAwardFee).endTo()
+                ;
             }
         }
-        batchInfo.getSwapResultMap().put(tx.getHash().toHex(), result);
-        return result;
+        Transaction sysDealTx = sysDeal.build();
+        return sysDealTx;
     }
 
     public SwapTradeDTO getSwapTradeInfo(int chainId, CoinData coinData) throws NulsException {
@@ -203,7 +250,7 @@ public class SwapTokenHandler extends SwapHandlerConstraints {
         if (to.getLockTime() != 0) {
             throw new NulsException(SwapErrorCode.SWAP_TRADE_AMOUNT_LOCK_ERROR);
         }
-        byte[] pairAddress = to.getAddress();
+        byte[] firstPairAddress = to.getAddress();
 
         List<CoinFrom> froms = coinData.getFrom();
         if (froms.size() != 1) {
@@ -212,7 +259,7 @@ public class SwapTokenHandler extends SwapHandlerConstraints {
         CoinFrom from = froms.get(0);
         byte[] userAddress = from.getAddress();
         BigInteger amountIn = to.getAmount();
-        return new SwapTradeDTO(userAddress, pairAddress, new NerveToken(to.getAssetsChainId(), to.getAssetsId()), amountIn);
+        return new SwapTradeDTO(userAddress, firstPairAddress, new NerveToken(to.getAssetsChainId(), to.getAssetsId()), amountIn);
     }
 
     public SwapTradeBus calSwapTradeBusiness(
@@ -225,10 +272,6 @@ public class SwapTokenHandler extends SwapHandlerConstraints {
             throw new NulsException(SwapErrorCode.INSUFFICIENT_OUTPUT_AMOUNT);
         }
 
-        //TODO pierre 账本改造，获取交易对中token余额balance0, balance1使用账本接口
-        //TODO pierre 考虑非正规转入pair地址的token，以及本模块连续交易造成的token余额变化
-        //TODO pierre 计算amountIn和amountOut时，要考虑以上因素
-
         List<TradePairBus> list = new ArrayList<>();
         int length = path.length;
         for (int i = 0; i < length - 1; i++) {
@@ -237,21 +280,30 @@ public class SwapTokenHandler extends SwapHandlerConstraints {
             NerveToken[] tokens = SwapUtils.tokenSort(input, output);
             NerveToken token0 = tokens[0];
             BigInteger amountIn = amounts[i];
+            // `非`流动性提供者可奖励的交易手续费
+            BigInteger unLiquidityAwardFee = amountIn
+                    .multiply(BI_3)
+                    .multiply(SwapContext.FEE_PERCENT_ALLOCATION_UN_LIQUIDIDY)
+                    .divide(BI_100_000);
             BigInteger amountOut = amounts[i + 1];
-            BigInteger amount0Out, amount1Out, amount0In, amount1In;
+            BigInteger amount0Out, amount1Out, amount0In, amount1In, amount0InUnLiquidityAwardFee, amount1InUnLiquidityAwardFee;
             if (input.equals(token0)) {
                 amount0In = amountIn;
                 amount1In = BigInteger.ZERO;
+                amount0InUnLiquidityAwardFee = unLiquidityAwardFee;
+                amount1InUnLiquidityAwardFee = BigInteger.ZERO;
                 amount0Out = BigInteger.ZERO;
                 amount1Out = amountOut;
             } else {
                 amount0In = BigInteger.ZERO;
                 amount1In = amountIn;
+                amount0InUnLiquidityAwardFee = BigInteger.ZERO;
+                amount1InUnLiquidityAwardFee = unLiquidityAwardFee;
                 amount0Out = amountOut;
                 amount1Out = BigInteger.ZERO;
             }
             byte[] to = i < length - 2 ? SwapUtils.getPairAddress(chainId, output, path[i + 2]) : _to;
-            IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(SwapUtils.getPairAddress(chainId, input, output)));
+            IPair pair = iPairFactory.getPair(SwapUtils.getStringPairAddress(chainId, input, output));
 
             SwapPairPO pairPO = pair.getPair();
             NerveToken _token0 = pairPO.getToken0();
@@ -272,9 +324,11 @@ public class SwapTokenHandler extends SwapHandlerConstraints {
             if (balance0Adjusted.multiply(balance1Adjusted).compareTo(_reserve0.multiply(_reserve1).multiply(BI_1000_000)) < 0) {
                 throw new NulsException(SwapErrorCode.K);
             }
-
+            // balance要扣除即时分配出的手续费奖励
+            balance0 = balance0.subtract(amount0InUnLiquidityAwardFee);
+            balance1 = balance1.subtract(amount1InUnLiquidityAwardFee);
             // 组装业务数据
-            TradePairBus _bus = new TradePairBus(pairPO.getAddress(), balance0, balance1, _reserve0, _reserve1, input, amountIn, output, amountOut, to);
+            TradePairBus _bus = new TradePairBus(pairPO.getAddress(), balance0, balance1, _reserve0, _reserve1, input, amountIn, unLiquidityAwardFee, output, amountOut, to);
             _bus.setPreBlockHeight(pair.getBlockHeightLast());
             _bus.setPreBlockTime(pair.getBlockTimeLast());
             list.add(_bus);

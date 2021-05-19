@@ -30,6 +30,7 @@ public class LedgerCall extends BaseCall {
             params.put("assetChainId", assetChainId);
             params.put("assetId", assetId);
             params.put("address", address);
+            params.put("isConfirmed", true);
             Map result = (Map) requestAndResponse(ModuleE.LG.abbr, "getBalanceNonce", params);
             String strNonce = (String) result.get("nonce");
             byte[] nonce = null != strNonce ? RPCUtil.decode(strNonce) : SwapConstant.DEFAULT_NONCE;
@@ -54,6 +55,7 @@ public class LedgerCall extends BaseCall {
             params.put("address", address);
             params.put("assetChainId", assetChainId);
             params.put("assetId", assetId);
+            params.put("isConfirmed", true);
             Map result = (Map) requestAndResponse(ModuleE.LG.abbr, "getBalance", params);
             Object available = result.get("available");
             if (null == available) {

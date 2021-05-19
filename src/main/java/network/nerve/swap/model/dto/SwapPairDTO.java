@@ -56,7 +56,7 @@ public class SwapPairDTO {
     }
 
     public BigInteger getTotalLP() {
-        return totalLP;
+        return totalLP == null ? BigInteger.ZERO : totalLP;
     }
 
     public void setTotalLP(BigInteger totalLP) {
@@ -73,5 +73,24 @@ public class SwapPairDTO {
         dto.setBlockHeightLast(blockHeightLast);
         dto.setBlockTimeLast(blockTimeLast);
         return dto;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("{");
+        sb.append("\"po\":")
+                .append(po.toString());
+        sb.append(",\"reserve0\":")
+                .append(reserve0);
+        sb.append(",\"reserve1\":")
+                .append(reserve1);
+        sb.append(",\"totalLP\":")
+                .append(totalLP);
+        sb.append(",\"blockTimeLast\":")
+                .append(blockTimeLast);
+        sb.append(",\"blockHeightLast\":")
+                .append(blockHeightLast);
+        sb.append('}');
+        return sb.toString();
     }
 }

@@ -69,21 +69,21 @@ public abstract class AbstractPair implements IPair {
 
     @Override
     public void update(BigInteger liquidityChange, BigInteger balance0, BigInteger balance1,
-                       BigInteger reserve0, BigInteger reserve1, long blockHeight, long blockTime) {
+                       BigInteger reserve0, BigInteger reserve1, long blockHeight, long blockTime) throws Exception {
         reserves = null;
         _update(liquidityChange, balance0, balance1, reserve0, reserve1, blockHeight, blockTime);
     }
 
     public abstract void _update(BigInteger liquidityChange, BigInteger balance0, BigInteger balance1,
-                       BigInteger reserve0, BigInteger reserve1, long blockHeight, long blockTime);
+                       BigInteger reserve0, BigInteger reserve1, long blockHeight, long blockTime) throws Exception;
 
     @Override
     public void rollback(BigInteger liquidityChange, BigInteger reserve0, BigInteger reserve1,
-                         long blockHeight, long blockTime) {
+                         long blockHeight, long blockTime) throws Exception {
         reserves = null;
         _rollback(liquidityChange, reserve0, reserve1, blockHeight, blockTime);
     }
 
     public abstract void _rollback(BigInteger liquidityChange, BigInteger reserve0, BigInteger reserve1,
-                         long blockHeight, long blockTime);
+                         long blockHeight, long blockTime) throws Exception;
 }

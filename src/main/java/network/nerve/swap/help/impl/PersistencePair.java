@@ -54,7 +54,7 @@ public class PersistencePair extends AbstractPair {
     }
 
     @Override
-    public void _update(BigInteger liquidityChange, BigInteger balance0, BigInteger balance1, BigInteger reserve0, BigInteger reserve1, long blockHeight, long blockTime) {
+    public void _update(BigInteger liquidityChange, BigInteger balance0, BigInteger balance1, BigInteger reserve0, BigInteger reserve1, long blockHeight, long blockTime) throws Exception {
         swapPairDTO.setTotalLP(swapPairDTO.getTotalLP().add(liquidityChange));
         swapPairDTO.setReserve0(balance0);
         swapPairDTO.setReserve1(balance1);
@@ -64,12 +64,12 @@ public class PersistencePair extends AbstractPair {
         String pairAddress = AddressTool.getStringAddressByBytes(getPair().getAddress());
         SwapPairReservesPO po = new SwapPairReservesPO(getPair().getAddress(), balance0, balance1, swapPairDTO.getTotalLP(), blockTime, blockHeight);
         swapPairReservesStorageService.savePairReserves(pairAddress, po);
-        // 清理缓存
+        // 更新缓存
         swapPairCacher.remove(pairAddress);
     }
 
     @Override
-    public void _rollback(BigInteger liquidityChange, BigInteger reserve0, BigInteger reserve1, long blockHeight, long blockTime) {
+    public void _rollback(BigInteger liquidityChange, BigInteger reserve0, BigInteger reserve1, long blockHeight, long blockTime) throws Exception {
         swapPairDTO.setTotalLP(swapPairDTO.getTotalLP().subtract(liquidityChange));
         swapPairDTO.setReserve0(reserve0);
         swapPairDTO.setReserve1(reserve1);
@@ -79,7 +79,7 @@ public class PersistencePair extends AbstractPair {
         String pairAddress = AddressTool.getStringAddressByBytes(getPair().getAddress());
         SwapPairReservesPO po = new SwapPairReservesPO(getPair().getAddress(), reserve0, reserve1, swapPairDTO.getTotalLP(), blockTime, blockHeight);
         swapPairReservesStorageService.savePairReserves(pairAddress, po);
-        // 清理缓存
+        // 更新缓存
         swapPairCacher.remove(pairAddress);
     }
 }

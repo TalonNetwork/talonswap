@@ -26,6 +26,10 @@ package network.nerve.swap.context;
 
 import io.nuls.core.log.logback.NulsLogger;
 
+import java.math.BigInteger;
+
+import static network.nerve.swap.constant.SwapConstant.BI_50;
+
 /**
  * 默认配置项
  * @author: Loki
@@ -33,11 +37,37 @@ import io.nuls.core.log.logback.NulsLogger;
  */
 public class SwapContext {
 
-
     /**
      * 黑洞公钥
      */
-    public static byte[] BLACKHOLE_PUBKEY = null;
+    public static byte[] BLACKHOLE_PUBKEY;
 
     public static NulsLogger logger;
+    
+    /**
+     * 手续费分配给`非`流动性提供者的百分比例（分配给系统地址和交易中指定的接收地址，剩余部分，则分配给流动性提供者）
+     */
+    public static BigInteger FEE_PERCENT_ALLOCATION_UN_LIQUIDIDY = BI_50;
+    /**
+     * 系统接收地址-获得的手续费百分比例（剩余部分，则分配给交易组装者指定接收地址）
+     */
+    public static BigInteger FEE_PERCENT_SYSTEM_RECEIVE = BI_50;
+    /**
+     * 手续费奖励的系统接收地址 //TODO pierre 配置系统接收地址
+     */
+    public static byte[] AWARD_FEE_SYSTEM_ADDRESS;
+
+    /**
+     * （恒定币交易）手续费收取的千分比例
+     */
+    public static BigInteger FEE_PERMILLAGE_STABLE_SWAP = BigInteger.ZERO;
+    /**
+     * （恒定币交易）手续费分配给`非`流动性提供者的百分比例（分配给系统地址和交易中指定的接收地址，剩余部分，则分配给流动性提供者）
+     */
+    public static BigInteger FEE_PERCENT_ALLOCATION_UN_LIQUIDIDY_STABLE_SWAP = BigInteger.ZERO;
+    /**
+     * （恒定币交易）系统接收地址-获得的手续费百分比例（剩余部分，则分配给交易组装者指定接收地址）
+     */
+    public static BigInteger FEE_PERCENT_SYSTEM_RECEIVE_STABLE_SWAP = BI_50;
+
 }

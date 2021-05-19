@@ -32,7 +32,10 @@ import network.nerve.swap.model.bo.SwapResult;
  * @date: 2021/4/1
  */
 public interface SwapExecuteResultStorageService {
-    boolean save(int chainId, NulsHash hash, SwapResult result);
+
+    boolean save(int chainId, NulsHash hash, SwapResult result) throws Exception;
+
     SwapResult getResult(int chainId, NulsHash hash);
-    boolean delete(int chainId, NulsHash hash);
+
+    boolean delete(int chainId, NulsHash hash) throws Exception;
 }

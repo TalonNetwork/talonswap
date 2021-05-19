@@ -61,7 +61,9 @@ public class NerveToken extends BaseNulsData {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o){
+            return true;
+        }
         if (o == null || getClass() != o.getClass()) return false;
         NerveToken that = (NerveToken) o;
         return chainId == that.chainId &&
