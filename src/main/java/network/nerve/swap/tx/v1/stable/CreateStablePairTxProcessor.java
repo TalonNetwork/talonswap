@@ -14,7 +14,6 @@ import network.nerve.swap.cache.LedgerAssetCacher;
 import network.nerve.swap.cache.StableSwapPairCacher;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
-import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.help.LedgerAssetRegisterHelper;
 import network.nerve.swap.manager.ChainManager;
 import network.nerve.swap.model.Chain;
@@ -49,7 +48,7 @@ public class CreateStablePairTxProcessor implements TransactionProcessor {
 
     @Override
     public int getType() {
-        return TxType.CREATE_SWAP_PAIR;
+        return TxType.CREATE_SWAP_PAIR_STABLE_COIN;
     }
 
     @Override
@@ -58,6 +57,8 @@ public class CreateStablePairTxProcessor implements TransactionProcessor {
             return null;
         }
         Chain chain = chainManager.getChain(chainId);
+        if (blockHeader == null) blockHeader = chain.getLatestBasicBlock().toBlockHeader();
+
         Map<String, Object> resultMap = new HashMap<>(SwapConstant.INIT_CAPACITY_2);
         if (chain == null) {
             Log.error("Chains do not exist.");
@@ -149,11 +150,10 @@ public class CreateStablePairTxProcessor implements TransactionProcessor {
         try {
             chain = chainManager.getChain(chainId);
             NulsLogger logger = chain.getLogger();
-            Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
-                SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
+                    return true;
                 }
                 if (!result.isSuccess()) {
                     return true;

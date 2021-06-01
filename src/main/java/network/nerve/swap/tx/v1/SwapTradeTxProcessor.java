@@ -16,7 +16,7 @@ import network.nerve.swap.cache.LedgerAssetCacher;
 import network.nerve.swap.cache.SwapPairCacher;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
-import network.nerve.swap.handler.impl.SwapTokenHandler;
+import network.nerve.swap.handler.impl.SwapTradeHandler;
 import network.nerve.swap.help.IPair;
 import network.nerve.swap.help.IPairFactory;
 import network.nerve.swap.manager.ChainManager;
@@ -48,7 +48,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
     @Autowired
     private SwapExecuteResultStorageService swapExecuteResultStorageService;
     @Autowired
-    private SwapTokenHandler swapTokenHandler;
+    private SwapTradeHandler swapTradeHandler;
     @Autowired
     private LedgerAssetCacher ledgerAssetCacher;
     @Autowired
@@ -65,6 +65,8 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
             return null;
         }
         Chain chain = chainManager.getChain(chainId);
+        if (blockHeader == null) blockHeader = chain.getLatestBasicBlock().toBlockHeader();
+
         Map<String, Object> resultMap = new HashMap<>(SwapConstant.INIT_CAPACITY_2);
         if (chain == null) {
             Log.error("Chains do not exist.");
@@ -132,7 +134,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
             SwapTradeDTO dto;
             try {
                 coinData = tx.getCoinDataInstance();
-                dto = swapTokenHandler.getSwapTradeInfo(chainId, coinData);
+                dto = swapTradeHandler.getSwapTradeInfo(chainId, coinData);
                 if (!swapPairCacher.isExist(AddressTool.getStringAddressByBytes(dto.getFirstPairAddress()))) {
                     logger.error("PAIR_NOT_EXIST! hash-{}", tx.getHash().toHex());
                     failsList.add(tx);
@@ -145,7 +147,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
                     errorCode = SwapErrorCode.PAIR_INCONSISTENCY.getCode();
                     continue;
                 }
-                swapTokenHandler.calSwapTradeBusiness(chainId, iPairFactory, dto.getAmountIn(),
+                swapTradeHandler.calSwapTradeBusiness(chainId, iPairFactory, dto.getAmountIn(),
                         txData.getTo(), txData.getPath(), txData.getAmountOutMin());
             } catch (NulsException e) {
                 Log.error(e);
@@ -184,6 +186,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
                     pair.update(BigInteger.ZERO, pairBus.getBalance0(), pairBus.getBalance1(), pairBus.getReserve0(), pairBus.getReserve1(), blockHeader.getHeight(), blockHeader.getTime());
                 }
                 swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
+                logger.info("[commit] Swap Trade, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -201,11 +204,10 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
         try {
             chain = chainManager.getChain(chainId);
             NulsLogger logger = chain.getLogger();
-            Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
-                SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
+                    return true;
                 }
                 if (!result.isSuccess()) {
                     return true;
@@ -218,6 +220,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
                     pair.rollback(BigInteger.ZERO, pairBus.getReserve0(), pairBus.getReserve1(), pairBus.getPreBlockHeight(), pairBus.getPreBlockTime());
                 }
                 swapExecuteResultStorageService.delete(chainId, tx.getHash());
+                logger.info("[rollback] Swap Trade, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);

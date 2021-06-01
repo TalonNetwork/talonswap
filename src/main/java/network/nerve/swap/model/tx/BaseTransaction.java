@@ -27,9 +27,9 @@ import io.nuls.base.data.CoinData;
 import io.nuls.base.data.CoinFrom;
 import io.nuls.base.data.CoinTo;
 import io.nuls.base.data.Transaction;
-import io.nuls.core.crypto.HexUtil;
 import network.nerve.swap.manager.LedgerTempBalanceManager;
 import network.nerve.swap.model.bo.LedgerBalance;
+import network.nerve.swap.utils.SwapUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -155,11 +155,7 @@ public abstract class BaseTransaction {
         if (!tos.isEmpty()) {
             coinData.getTo().addAll(tos);
         }
-        try {
-            tx.setCoinData(coinData.serialize());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        tx.setCoinData(SwapUtils.nulsData2HexBytes(coinData));
         return tx;
     }
 }

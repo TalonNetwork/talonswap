@@ -39,7 +39,7 @@ public class TxAssembleUtil {
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
 
-        aTx.setTxData();
+
 
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.FARM_CREATE);
@@ -75,7 +75,7 @@ public class TxAssembleUtil {
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
 
-        aTx.setTxData();
+
 
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.FARM_STAKE);
@@ -110,7 +110,7 @@ public class TxAssembleUtil {
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
 
-        aTx.setTxData();
+
 
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.FARM_WITHDRAW);
@@ -132,7 +132,7 @@ public class TxAssembleUtil {
         data.setToken1(token1);
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
-        aTx.setTxData();
+
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.CREATE_SWAP_PAIR);
 
@@ -152,7 +152,7 @@ public class TxAssembleUtil {
         data.setAmountBMin(amountBMin);
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
-        aTx.setTxData();
+
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.SWAP_ADD_LIQUIDITY);
 
@@ -202,7 +202,7 @@ public class TxAssembleUtil {
         data.setAmountBMin(amountBMin);
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
-        aTx.setTxData();
+
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.SWAP_REMOVE_LIQUIDITY);
 
@@ -241,7 +241,7 @@ public class TxAssembleUtil {
         data.setPath(path);
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
-        aTx.setTxData();
+
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.SWAP_TRADE);
 
@@ -271,7 +271,7 @@ public class TxAssembleUtil {
         data.setCoins(coins);
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
-        aTx.setTxData();
+
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.CREATE_SWAP_PAIR_STABLE_COIN);
 
@@ -283,13 +283,12 @@ public class TxAssembleUtil {
                                                          BigInteger[] amounts,
                                                          NerveToken[] tokens,
                                                          byte[] pairAddress,
-                                                         long deadline, byte[] to, LedgerTempBalanceManager tempBalanceManager) throws IOException {
+                                                         byte[] to, LedgerTempBalanceManager tempBalanceManager) throws IOException {
         StableAddLiquidityData data = new StableAddLiquidityData();
         data.setTo(to);
-        data.setDeadline(deadline);
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
-        aTx.setTxData();
+
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.SWAP_ADD_LIQUIDITY_STABLE_COIN);
 
@@ -321,14 +320,13 @@ public class TxAssembleUtil {
                                                             BigInteger amountLP, NerveToken tokenLP,
                                                             byte[] indexs,
                                                             byte[] pairAddress,
-                                                            long deadline, byte[] to, LedgerTempBalanceManager tempBalanceManager) throws IOException {
+                                                            byte[] to, LedgerTempBalanceManager tempBalanceManager) throws IOException {
         StableRemoveLiquidityData data = new StableRemoveLiquidityData();
         data.setIndexs(indexs);
         data.setTo(to);
-        data.setDeadline(deadline);
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
-        aTx.setTxData();
+
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.SWAP_REMOVE_LIQUIDITY_STABLE_COIN);
 
@@ -355,17 +353,16 @@ public class TxAssembleUtil {
     public static Transaction asmbStableSwapTrade(int chainId, String from,
                                                   BigInteger[] amountsIn,
                                                   NerveToken[] tokensIn,
-                                                  byte receiveIndex, byte[] feeTo,
+                                                  byte tokenOutIndex, byte[] feeTo,
                                                   byte[] pairAddress,
-                                                  long deadline, byte[] to, LedgerTempBalanceManager tempBalanceManager) throws IOException {
+                                                  byte[] to, LedgerTempBalanceManager tempBalanceManager) throws IOException {
         StableSwapTradeData data = new StableSwapTradeData();
         data.setTo(to);
-        data.setDeadline(deadline);
-        data.setReceiveIndex(receiveIndex);
+        data.setTokenOutIndex(tokenOutIndex);
         data.setFeeTo(feeTo);
 
         AssembleTransaction aTx = new AssembleTransaction(data.serialize());
-        aTx.setTxData();
+
         aTx.setTime(System.currentTimeMillis() / 1000L);
         aTx.setTxType(TxType.SWAP_TRADE_STABLE_COIN);
 

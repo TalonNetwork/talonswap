@@ -1,5 +1,6 @@
 package network.nerve.swap.cache.impl;
 
+import io.nuls.base.basic.AddressTool;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import network.nerve.swap.cache.SwapPairCacher;
@@ -41,6 +42,9 @@ public class SwapPairCacherImpl implements SwapPairCacher {
             dto = new SwapPairDTO();
             dto.setPo(pairPO);
             SwapPairReservesPO reservesPO = swapPairReservesStorageService.getPairReserves(address);
+            if (reservesPO == null) {
+                reservesPO = new SwapPairReservesPO(AddressTool.getAddress(address));
+            }
             dto.setReserve0(reservesPO.getReserve0());
             dto.setReserve1(reservesPO.getReserve1());
             dto.setTotalLP(reservesPO.getTotalLP());
@@ -68,6 +72,6 @@ public class SwapPairCacherImpl implements SwapPairCacher {
 
     @Override
     public boolean isExist(String pairAddress) {
-        return CACHE_MAP.containsKey(pairAddress);
+        return this.get(pairAddress) != null;
     }
 }

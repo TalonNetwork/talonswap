@@ -31,8 +31,26 @@ public interface SwapCmdConstant {
     String BATCH_BEGIN = "sw_batch_begin";
     String INVOKE = "sw_invoke";
     String BATCH_END = "sw_batch_end";
+
     String IS_LEGAL_COIN_FOR_ADD_STABLE = "sw_is_legal_coin_for_add_stable";
     String ADD_COIN_FOR_STABLE = "sw_add_coin_for_stable";
+    String BEST_TRADE_EXACT_IN = "sw_best_trade_exact_in";
+    String SWAP_CREATE_PAIR = "sw_swap_create_pair";
+    String SWAP_ADD_LIQUIDITY = "sw_swap_add_liquidity";
+    String SWAP_REMOVE_LIQUIDITY = "sw_swap_remove_liquidity";
+    String SWAP_TOKEN_TRADE = "sw_swap_token_trade";
+    String SWAP_MIN_AMOUNT_ADD_LIQUIDITY = "sw_swap_min_amount_add_liquidity";
+    String SWAP_MIN_AMOUNT_REMOVE_LIQUIDITY = "sw_swap_min_amount_remove_liquidity";
+    String SWAP_MIN_AMOUNT_TOKEN_TRADE = "sw_swap_min_amount_token_trade";
+    String SWAP_PAIR_INFO = "sw_swap_pair_info";
+
+    String SWAP_RESULT_INFO = "sw_swap_result_info";
+
+    String STABLE_SWAP_CREATE_PAIR = "sw_stable_swap_create_pair";
+    String STABLE_SWAP_ADD_LIQUIDITY = "sw_stable_swap_add_liquidity";
+    String STABLE_SWAP_REMOVE_LIQUIDITY = "sw_stable_swap_remove_liquidity";
+    String STABLE_SWAP_TOKEN_TRADE = "sw_stable_swap_token_trade";
+    String STABLE_SWAP_PAIR_INFO = "sw_stable_swap_pair_info";
 
     String CREATE_FARM = "sw_createFarm";
     String FARM_STAKE = "sw_farmstake";

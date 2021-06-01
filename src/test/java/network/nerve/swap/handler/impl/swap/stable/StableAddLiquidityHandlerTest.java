@@ -227,7 +227,7 @@ public class StableAddLiquidityHandlerTest {
         //StableAddLiquidityBus bus = SwapUtils.calStableAddLiquididy(chainId, iPairFactory, stablePairAddress, fromBytes, amounts, to);
 
         Transaction tx = TxAssembleUtil.asmbStableSwapAddLiquidity(chainId, from, amounts, tokens,
-                stablePairAddressBytes, deadline, to, tempBalanceManager);
+                stablePairAddressBytes, to, tempBalanceManager);
         tempBalanceManager.refreshTempBalance(chainId, tx, header.getTime());
         System.out.println(String.format("\t用户交易: \n%s", tx.format()));
         NerveCallback<SwapResult> callback = new NerveCallback<>() {
@@ -279,7 +279,7 @@ public class StableAddLiquidityHandlerTest {
 
         BigInteger _toAddressBalanceLP = tempBalanceManager.getBalance(to, tokenLP.getChainId(), tokenLP.getAssetId()).getData().getBalance();
         Transaction tx = TxAssembleUtil.asmbStableSwapAddLiquidity(chainId, from, amounts, tokens,
-                stablePairAddressBytes, deadline, to, tempBalanceManager);
+                stablePairAddressBytes, to, tempBalanceManager);
         tempBalanceManager.refreshTempBalance(chainId, tx, header.getTime());
         System.out.println(String.format("\t用户交易: \n%s", tx.format()));
         NerveCallback<SwapResult> callback = new NerveCallback<>() {
@@ -312,7 +312,8 @@ public class StableAddLiquidityHandlerTest {
     }
 
     private JunitCase getCase2() throws Exception {
-        String caseDesc = "异常-添加流动性超时";
+        //TODO pierre 异常case
+        String caseDesc = "异常-添加流动性";
         System.out.println(String.format("//////////////////////////////////////////////////【%s】//////////////////////////////////////////////////", caseDesc));
         int chainId = chain.getChainId();
         BatchInfo batchInfo = chain.getBatchInfo();
@@ -322,16 +323,10 @@ public class StableAddLiquidityHandlerTest {
 
         BigInteger[] amounts = new BigInteger[]{BigInteger.valueOf(300_00000000L), BigInteger.valueOf(200_00000000L)};
         NerveToken[] tokens = new NerveToken[]{token0, token1};
-        long deadline = System.currentTimeMillis() / 1000 + 3;
         byte[] to = AddressTool.getAddress(address21);
 
-        // 造成超时
-        TimeUnit.SECONDS.sleep(5);
-
-        header.setTime(System.currentTimeMillis() / 1000);
-
         Transaction tx = TxAssembleUtil.asmbStableSwapAddLiquidity(chainId, from, amounts, tokens,
-                stablePairAddressBytes, deadline, to, tempBalanceManager);
+                stablePairAddressBytes, to, tempBalanceManager);
         tempBalanceManager.refreshTempBalance(chainId, tx, header.getTime());
         System.out.println(String.format("\t用户交易: \n%s", tx.format()));
         NerveCallback<SwapResult> callback = new NerveCallback<>() {

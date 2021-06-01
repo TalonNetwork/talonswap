@@ -55,7 +55,7 @@ public class StableSwapPairPo {
         sb.append("\"address\":")
                 .append('\"').append(AddressTool.getStringAddressByBytes(address)).append('\"');
         sb.append(",\"tokenLP\":")
-                .append('\"').append(tokenLP).append('\"');
+                .append(tokenLP);
         sb.append(",\"coins\":")
                 .append(Arrays.deepToString(coins));
         sb.append('}');

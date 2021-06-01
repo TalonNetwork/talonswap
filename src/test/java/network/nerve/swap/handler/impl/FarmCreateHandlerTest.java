@@ -19,6 +19,7 @@ import network.nerve.swap.manager.FarmUserInfoTempManager;
 import network.nerve.swap.model.Chain;
 import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.bo.BatchInfo;
+import network.nerve.swap.model.bo.LedgerBalance;
 import network.nerve.swap.model.bo.NonceBalance;
 import network.nerve.swap.model.bo.SwapResult;
 import network.nerve.swap.model.dto.LedgerAssetDTO;
@@ -81,6 +82,11 @@ public class FarmCreateHandlerTest {
 
             @Override
             public NonceBalance getBalanceNonce(int chainId, int assetChainId, int assetId, String address) throws NulsException {
+                return null;
+            }
+
+            @Override
+            public LedgerBalance getLedgerBalance(int chainId, int assetChainId, int assetId, String address) throws NulsException {
                 return null;
             }
         });

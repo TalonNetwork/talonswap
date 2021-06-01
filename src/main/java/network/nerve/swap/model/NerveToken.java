@@ -90,4 +90,8 @@ public class NerveToken extends BaseNulsData {
     public NerveToken clone() {
         return new NerveToken(chainId, assetId);
     }
+
+    public String str() {
+        return chainId + "-" + assetId;
+    }
 }

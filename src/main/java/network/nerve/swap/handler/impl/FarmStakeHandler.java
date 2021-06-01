@@ -148,7 +148,7 @@ public class FarmStakeHandler extends SwapHandlerConstraints {
             user.setFarmHash(farm.getFarmHash());
             user.setAmount(BigInteger.ZERO);
             user.setUserAddress(address);
-            user.setRewardDebt(farm.getAccSyrupPerShare());
+            user.setRewardDebt(user.getAmount().multiply(farm.getAccSyrupPerShare()).divide(SwapConstant.BI_1E12));
         }
         bus.setUserAmountOld(user.getAmount());
         bus.setUserRewardDebtOld(user.getRewardDebt());

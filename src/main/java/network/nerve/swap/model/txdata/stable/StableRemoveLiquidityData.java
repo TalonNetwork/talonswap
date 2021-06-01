@@ -16,21 +16,18 @@ public class StableRemoveLiquidityData extends BaseNulsData {
 
     private byte[] indexs;
     private byte[] to;
-    private long deadline;
 
 
     @Override
     protected void serializeToStream(NulsOutputStreamBuffer stream) throws IOException {
         stream.writeBytesWithLength(indexs);
         stream.write(to);
-        stream.writeUint32(deadline);
     }
 
     @Override
     public void parse(NulsByteBuffer byteBuffer) throws NulsException {
         this.indexs = byteBuffer.readByLengthByte();
         this.to = byteBuffer.readBytes(Address.ADDRESS_LENGTH);
-        this.deadline = byteBuffer.readUint32();
     }
 
     @Override
@@ -55,14 +52,6 @@ public class StableRemoveLiquidityData extends BaseNulsData {
 
     public void setTo(byte[] to) {
         this.to = to;
-    }
-
-    public long getDeadline() {
-        return deadline;
-    }
-
-    public void setDeadline(long deadline) {
-        this.deadline = deadline;
     }
 
 }

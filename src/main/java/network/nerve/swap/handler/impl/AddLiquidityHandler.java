@@ -33,9 +33,7 @@ import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import io.nuls.core.crypto.HexUtil;
 import io.nuls.core.exception.NulsException;
-import io.nuls.core.exception.NulsRuntimeException;
 import io.nuls.core.log.Log;
-import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.handler.ISwapInvoker;
 import network.nerve.swap.handler.SwapHandlerConstraints;
@@ -56,13 +54,9 @@ import network.nerve.swap.model.txdata.AddLiquidityData;
 import network.nerve.swap.utils.SwapDBUtil;
 import network.nerve.swap.utils.SwapUtils;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
-
-import static network.nerve.swap.constant.SwapErrorCode.INSUFFICIENT_A_AMOUNT;
-import static network.nerve.swap.constant.SwapErrorCode.INSUFFICIENT_B_AMOUNT;
 
 /**
  * @author: PierreLuo
@@ -111,9 +105,6 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
             RealAddLiquidityOrderDTO orderDTO = SwapUtils.calcAddLiquidity(chainId, iPairFactory, tokenA, tokenB,
                     dto.getUserLiquidityA(), dto.getUserLiquidityB(),
                     txData.getAmountAMin(), txData.getAmountBMin());
-            BigInteger[] orderRealAddLiquidity = orderDTO.getRealAddLiquidity();
-            BigInteger[] orderReserves = orderDTO.getReserves();
-            BigInteger[] orderRefund = orderDTO.getRefund();
 
             BigInteger[] _realAddLiquidity;
             BigInteger[] _reserves;
@@ -121,13 +112,13 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
             NerveToken[] tokens = SwapUtils.tokenSort(tokenA, tokenB);
             boolean firstTokenA = tokens[0].equals(tokenA);
             if (firstTokenA) {
-                _realAddLiquidity = orderRealAddLiquidity;
-                _reserves = orderReserves;
-                _refund = orderRefund;
+                _realAddLiquidity = new BigInteger[]{orderDTO.getRealAddLiquidityA(), orderDTO.getRealAddLiquidityB()};
+                _reserves = new BigInteger[]{orderDTO.getReservesA(), orderDTO.getReservesB()};
+                _refund = new BigInteger[]{orderDTO.getRefundA(), orderDTO.getRefundB()};
             } else {
-                _realAddLiquidity = new BigInteger[]{orderRealAddLiquidity[1], orderRealAddLiquidity[0]};
-                _reserves = new BigInteger[]{orderReserves[1], orderReserves[0]};
-                _refund = new BigInteger[]{orderRefund[1], orderRefund[0]};
+                _realAddLiquidity = new BigInteger[]{orderDTO.getRealAddLiquidityB(), orderDTO.getRealAddLiquidityA()};
+                _reserves = new BigInteger[]{orderDTO.getReservesB(), orderDTO.getReservesA()};
+                _refund = new BigInteger[]{orderDTO.getRefundB(), orderDTO.getRefundA()};
             }
 
             // 整合计算数据
@@ -154,11 +145,11 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
             Transaction sysDealTx = this.makeSystemDealTx(bus, dto, tx.getHash().toHex(), tokenA, tokenB, tokenLP, txData.getTo(), blockTime, tempBalanceManager);
 
             result.setSubTx(sysDealTx);
-            result.setSubTxStr(SwapUtils.tx2Hex(sysDealTx));
+            result.setSubTxStr(SwapUtils.nulsData2Hex(sysDealTx));
             // 更新临时余额
             tempBalanceManager.refreshTempBalance(chainId, sysDealTx, blockTime);
             // 更新临时数据
-            pair.update(orderDTO.getLiquidity(), orderRealAddLiquidity[0].add(orderReserves[0]), orderRealAddLiquidity[1].add(orderReserves[1]), orderReserves[0], orderReserves[1], blockHeight, blockTime);
+            pair.update(orderDTO.getLiquidity(), _realAddLiquidity[0].add(_reserves[0]), _realAddLiquidity[1].add(_reserves[1]), _reserves[0], _reserves[1], blockHeight, blockTime);
         } catch (Exception e) {
             Log.error(e);
             // 装填失败的执行结果
@@ -196,7 +187,7 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
                         .setToAmount(dto.getUserLiquidityB()).endTo()
                       .build();
             result.setSubTx(refundTx);
-            String refundTxStr = SwapUtils.tx2Hex(refundTx);
+            String refundTxStr = SwapUtils.nulsData2Hex(refundTx);
             result.setSubTxStr(refundTxStr);
             // 更新临时余额
             tempBalanceManager.refreshTempBalance(chainId, refundTx, blockTime);

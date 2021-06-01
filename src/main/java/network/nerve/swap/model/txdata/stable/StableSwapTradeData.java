@@ -5,7 +5,6 @@ import io.nuls.base.basic.NulsOutputStreamBuffer;
 import io.nuls.base.data.Address;
 import io.nuls.base.data.BaseNulsData;
 import io.nuls.core.exception.NulsException;
-import io.nuls.core.parse.SerializeUtils;
 
 import java.io.IOException;
 
@@ -15,8 +14,7 @@ import java.io.IOException;
 public class StableSwapTradeData extends BaseNulsData {
 
     private byte[] to;
-    private long deadline;
-    private byte receiveIndex;
+    private byte tokenOutIndex;
     /**
      * 手续费接收地址
      */
@@ -25,8 +23,7 @@ public class StableSwapTradeData extends BaseNulsData {
     @Override
     protected void serializeToStream(NulsOutputStreamBuffer stream) throws IOException {
         stream.write(to);
-        stream.writeUint32(deadline);
-        stream.writeByte(receiveIndex);
+        stream.writeByte(tokenOutIndex);
         if (feeTo != null) {
             stream.write(feeTo);
         }
@@ -35,8 +32,7 @@ public class StableSwapTradeData extends BaseNulsData {
     @Override
     public void parse(NulsByteBuffer byteBuffer) throws NulsException {
         this.to = byteBuffer.readBytes(Address.ADDRESS_LENGTH);
-        this.deadline = byteBuffer.readUint32();
-        this.receiveIndex = byteBuffer.readByte();
+        this.tokenOutIndex = byteBuffer.readByte();
         if (!byteBuffer.isFinished()) {
             this.feeTo = byteBuffer.readBytes(Address.ADDRESS_LENGTH);
         }
@@ -46,7 +42,6 @@ public class StableSwapTradeData extends BaseNulsData {
     public int size() {
         int size = 0;
         size += Address.ADDRESS_LENGTH;
-        size += SerializeUtils.sizeOfUint32();
         size += 1;
         if (feeTo != null) {
             size += Address.ADDRESS_LENGTH;
@@ -71,19 +66,11 @@ public class StableSwapTradeData extends BaseNulsData {
         this.feeTo = feeTo;
     }
 
-    public long getDeadline() {
-        return deadline;
+    public byte getTokenOutIndex() {
+        return tokenOutIndex;
     }
 
-    public void setDeadline(long deadline) {
-        this.deadline = deadline;
-    }
-
-    public byte getReceiveIndex() {
-        return receiveIndex;
-    }
-
-    public void setReceiveIndex(byte receiveIndex) {
-        this.receiveIndex = receiveIndex;
+    public void setTokenOutIndex(byte tokenOutIndex) {
+        this.tokenOutIndex = tokenOutIndex;
     }
 }

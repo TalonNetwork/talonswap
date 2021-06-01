@@ -214,6 +214,8 @@ public class SwapBootstrap extends RpcModule {
     private void initContext() {
         // 提现黑洞公钥
         SwapContext.BLACKHOLE_PUBKEY = HexUtil.decode(swapConfig.getBlackHolePublicKey());
+        // 手续费奖励的系统接收地址
+        SwapContext.AWARD_FEE_SYSTEM_ADDRESS = AddressTool.getAddressByPubKeyStr(swapConfig.getAwardFeeSystemAddressPublicKey(), swapConfig.getChainId());
     }
 
     private void setSwapGenerateTxTypes(int currentChainId) {

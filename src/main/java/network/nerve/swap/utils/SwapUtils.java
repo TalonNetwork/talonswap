@@ -4,6 +4,7 @@ import io.nuls.base.RPCUtil;
 import io.nuls.base.basic.AddressTool;
 import io.nuls.base.basic.NulsByteBuffer;
 import io.nuls.base.data.Address;
+import io.nuls.base.data.BaseNulsData;
 import io.nuls.base.data.NulsHash;
 import io.nuls.base.data.Transaction;
 import io.nuls.base.signture.MultiSignTxSignature;
@@ -32,7 +33,7 @@ import network.nerve.swap.help.IPair;
 import network.nerve.swap.help.IPairFactory;
 import network.nerve.swap.help.IStablePair;
 import network.nerve.swap.model.NerveToken;
-import network.nerve.swap.model.ValidaterResult;
+import network.nerve.swap.model.TokenAmount;
 import network.nerve.swap.model.business.RemoveLiquidityBus;
 import network.nerve.swap.model.business.stable.StableAddLiquidityBus;
 import network.nerve.swap.model.business.stable.StableRemoveLiquidityBus;
@@ -41,10 +42,13 @@ import network.nerve.swap.model.dto.RealAddLiquidityOrderDTO;
 import network.nerve.swap.model.po.FarmPoolPO;
 import network.nerve.swap.model.po.SwapPairPO;
 import network.nerve.swap.model.po.stable.StableSwapPairPo;
+import network.nerve.swap.model.vo.SwapPairVO;
+import network.nerve.swap.model.vo.RouteVO;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static network.nerve.swap.constant.SwapConstant.*;
 import static network.nerve.swap.constant.SwapErrorCode.*;
@@ -386,7 +390,7 @@ public class SwapUtils {
 
     public static StableSwapTradeBus calStableSwapTradeBusiness(
             int chainId, IPairFactory iPairFactory,
-            BigInteger[] amountsIn, byte receiveIndex, byte[] pairAddressBytes, byte[] to) throws NulsException {
+            BigInteger[] amountsIn, byte tokenOutIndex, byte[] pairAddressBytes, byte[] to) throws NulsException {
         String pairAddress = AddressTool.getStringAddressByBytes(pairAddressBytes);
         IStablePair stablePair = iPairFactory.getStablePair(pairAddress);
         StableSwapPairPo pairPo = stablePair.getPair();
@@ -395,7 +399,7 @@ public class SwapUtils {
         BigInteger[] unLiquidityAwardFees = new BigInteger[length];
         BigInteger[] changeBalances = new BigInteger[length];
         BigInteger[] balances = stablePair.getBalances();
-        BigInteger outBalance = balances[receiveIndex];
+        BigInteger outBalance = balances[tokenOutIndex];
         BigInteger totalAmountOut = BigInteger.ZERO;
         for (int i = 0; i < length; i++) {
             BigInteger amountIn = amountsIn[i];
@@ -416,11 +420,69 @@ public class SwapUtils {
         for (int i = 0; i < length; i++) {
             changeBalances[i] = changeBalances[i].add(amountsIn[i]).subtract(unLiquidityAwardFees[i]);
         }
-        changeBalances[receiveIndex] = changeBalances[receiveIndex].subtract(totalAmountOut);
-        StableSwapTradeBus bus = new StableSwapTradeBus(pairAddressBytes, changeBalances, balances, amountsIn, unLiquidityAwardFees, receiveIndex, totalAmountOut, to);
+        changeBalances[tokenOutIndex] = changeBalances[tokenOutIndex].subtract(totalAmountOut);
+        StableSwapTradeBus bus = new StableSwapTradeBus(pairAddressBytes, changeBalances, balances, amountsIn, unLiquidityAwardFees, tokenOutIndex, totalAmountOut, to);
         bus.setPreBlockHeight(stablePair.getBlockHeightLast());
         bus.setPreBlockTime(stablePair.getBlockTimeLast());
         return bus;
+    }
+
+    public static List<RouteVO> bestTradeExactIn(int chainId, IPairFactory iPairFactory, List<SwapPairVO> pairs, TokenAmount tokenAmountIn,
+                                                 NerveToken out, LinkedHashSet<SwapPairVO> currentPath,
+                                                 List<RouteVO> bestTrade, TokenAmount orginTokenAmountIn, int maxPairSize) {
+        List<RouteVO> routes = bestTradeExactIn(chainId, iPairFactory, pairs, tokenAmountIn, out, currentPath, bestTrade, orginTokenAmountIn, 0, maxPairSize);
+        routes.sort(RouteVOSort.INSTANCE);
+        return routes;
+    }
+
+    private static List<RouteVO> bestTradeExactIn(int chainId, IPairFactory iPairFactory, List<SwapPairVO> pairs, TokenAmount tokenAmountIn,
+                                                 NerveToken out, LinkedHashSet<SwapPairVO> currentPath,
+                                                 List<RouteVO> bestTrade, TokenAmount orginTokenAmountIn, int depth, int maxPairSize) {
+        int length = pairs.size();
+        for (int i = 0; i < length; i++) {
+            SwapPairVO pair = pairs.get(i);
+            NerveToken tokenIn = tokenAmountIn.getToken();
+            if (!pair.getToken0().equals(tokenIn) && !pair.getToken1().equals(tokenIn)) continue;
+            NerveToken tokenOut = pair.getToken0().equals(tokenIn) ? pair.getToken1() : pair.getToken0();
+            if (containsCurrency(currentPath, tokenOut)) continue;
+            BigInteger[] reserves = SwapUtils.getReserves(chainId, iPairFactory, tokenIn, tokenOut);
+            BigInteger amountOut = SwapUtils.getAmountOut(tokenAmountIn.getAmount(), reserves[0], reserves[1]);
+
+            if (tokenOut.equals(out)) {
+                currentPath.add(pair);
+                bestTrade.add(new RouteVO(currentPath.stream().collect(Collectors.toList()), orginTokenAmountIn, new TokenAmount(tokenOut, amountOut)));
+            } else if (depth < (maxPairSize - 1) && pairs.size() > 1){
+                LinkedHashSet cloneLinkedHashSet = cloneLinkedHashSet(currentPath);
+                cloneLinkedHashSet.add(pair);
+                List<SwapPairVO> subList = subList(pairs, 0, i);
+                subList.addAll(subList(pairs, i + 1, length));
+                bestTradeExactIn(chainId, iPairFactory, subList, new TokenAmount(tokenOut, amountOut), out, cloneLinkedHashSet, bestTrade, orginTokenAmountIn, depth + 1, maxPairSize);
+            }
+        }
+        return bestTrade;
+    }
+
+    private static LinkedHashSet cloneLinkedHashSet(LinkedHashSet set) {
+        LinkedHashSet<Object> objects = new LinkedHashSet<>();
+        objects.addAll(set);
+        return objects;
+    }
+
+    private static boolean containsCurrency(LinkedHashSet<SwapPairVO> currentPath, NerveToken tokenOut) {
+        for (SwapPairVO pair : currentPath) {
+            if (pair.hasToken(tokenOut)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static List subList(List list, int fromIndex, int toIndex) {
+        List objs = new ArrayList();
+        for (int i = fromIndex, length = toIndex; i < length; i++) {
+            objs.add(list.get(i));
+        }
+        return objs;
     }
 
     public static int extractTxTypeFromTx(String txString) throws NulsException {
@@ -445,9 +507,13 @@ public class SwapUtils {
         return Base64.getDecoder().decode(string);
     }
 
-    public static String tx2Hex(Transaction tx) {
+    public static String nulsData2Hex(BaseNulsData nulsData) {
+        return HexUtil.encode(nulsData2HexBytes(nulsData));
+    }
+
+    public static byte[] nulsData2HexBytes(BaseNulsData nulsData) {
         try {
-            return HexUtil.encode(tx.serialize());
+            return nulsData.serialize();
         } catch (IOException e) {
             throw new NulsRuntimeException(e);
         }
@@ -564,7 +630,7 @@ public class SwapUtils {
         if (s.length != 2) {
             return null;
         }
-        return new NerveToken(Integer.parseInt(s[0]), Integer.parseInt(s[1]));
+        return new NerveToken(Integer.parseInt(s[0].trim()), Integer.parseInt(s[1].trim()));
     }
 
     public static void signTx(Transaction tx, byte[] prikey) throws IOException {

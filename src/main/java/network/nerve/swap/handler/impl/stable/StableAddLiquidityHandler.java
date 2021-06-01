@@ -93,10 +93,6 @@ public class StableAddLiquidityHandler extends SwapHandlerConstraints {
             // 提取业务参数
             StableAddLiquidityData txData = new StableAddLiquidityData();
             txData.parse(tx.getTxData(), 0);
-            long deadline = txData.getDeadline();
-            if (blockTime > deadline) {
-                throw new NulsException(SwapErrorCode.EXPIRED);
-            }
 
             String pairAddress = dto.getPairAddress();
             IStablePair stablePair = iPairFactory.getStablePair(pairAddress);
@@ -115,7 +111,7 @@ public class StableAddLiquidityHandler extends SwapHandlerConstraints {
             LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
             Transaction sysDealTx = this.makeSystemDealTx(bus, pairPo.getCoins(), pairPo.getTokenLP(), tx.getHash().toHex(), blockTime, tempBalanceManager);
             result.setSubTx(sysDealTx);
-            result.setSubTxStr(SwapUtils.tx2Hex(sysDealTx));
+            result.setSubTxStr(SwapUtils.nulsData2Hex(sysDealTx));
             // 更新临时余额
             tempBalanceManager.refreshTempBalance(chainId, sysDealTx, blockTime);
             // 更新临时数据
@@ -161,7 +157,7 @@ public class StableAddLiquidityHandler extends SwapHandlerConstraints {
             }
             Transaction refundTx = refund.build();
             result.setSubTx(refundTx);
-            String refundTxStr = SwapUtils.tx2Hex(refundTx);
+            String refundTxStr = SwapUtils.nulsData2Hex(refundTx);
             result.setSubTxStr(refundTxStr);
             // 更新临时余额
             tempBalanceManager.refreshTempBalance(chainId, refundTx, blockTime);

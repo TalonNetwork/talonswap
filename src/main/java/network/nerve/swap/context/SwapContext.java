@@ -37,6 +37,7 @@ import static network.nerve.swap.constant.SwapConstant.BI_50;
  */
 public class SwapContext {
 
+    public static long LATEST_BLOCK_HEIGHT = 0L;
     /**
      * 黑洞公钥
      */
@@ -53,7 +54,7 @@ public class SwapContext {
      */
     public static BigInteger FEE_PERCENT_SYSTEM_RECEIVE = BI_50;
     /**
-     * 手续费奖励的系统接收地址 //TODO pierre 配置系统接收地址
+     * 手续费奖励的系统接收地址
      */
     public static byte[] AWARD_FEE_SYSTEM_ADDRESS;
 

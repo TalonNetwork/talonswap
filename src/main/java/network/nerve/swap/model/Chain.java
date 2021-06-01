@@ -5,6 +5,7 @@ import network.nerve.swap.config.ConfigBean;
 import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.enums.BlockType;
 import network.nerve.swap.model.bo.BatchInfo;
+import network.nerve.swap.model.bo.LatestBasicBlock;
 
 /**
  * 链的基础数据和运行状态数据
@@ -22,7 +23,10 @@ public class Chain {
 
     private ConfigBean config;
 
-    private Long bestHeight;
+    /**
+     * 最新区块高度等简略信息
+     */
+    private LatestBasicBlock latestBasicBlock = new LatestBasicBlock();
 
     /**
      * 日志
@@ -70,6 +74,14 @@ public class Chain {
         SwapContext.logger.error("Setting value error. Unkown blockType! - [{}]", blockType);
     }
 
+    public LatestBasicBlock getLatestBasicBlock() {
+        return latestBasicBlock;
+    }
+
+    public void setLatestBasicBlock(LatestBasicBlock latestBasicBlock) {
+        this.latestBasicBlock = latestBasicBlock;
+    }
+
     public static void putCurrentThreadBlockType(Integer blockType) {
         currentThreadBlockType.set(blockType);
     }
@@ -99,10 +111,7 @@ public class Chain {
     }
 
     public Long getBestHeight() {
-        return bestHeight;
+        return latestBasicBlock.getHeight();
     }
 
-    public void setBestHeight(Long bestHeight) {
-        this.bestHeight = bestHeight;
-    }
 }

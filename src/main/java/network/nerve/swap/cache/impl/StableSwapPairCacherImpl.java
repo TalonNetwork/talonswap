@@ -1,5 +1,6 @@
 package network.nerve.swap.cache.impl;
 
+import io.nuls.base.basic.AddressTool;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import network.nerve.swap.cache.StableSwapPairCacher;
@@ -37,6 +38,9 @@ public class StableSwapPairCacherImpl implements StableSwapPairCacher {
             dto = new StableSwapPairDTO();
             dto.setPo(pairPo);
             StableSwapPairBalancesPo pairBalances = swapStablePairBalancesStorageService.getPairBalances(address);
+            if (pairBalances == null) {
+                pairBalances = new StableSwapPairBalancesPo(AddressTool.getAddress(address), pairPo.getCoins().length);
+            }
             dto.setBalances(pairBalances.getBalances());
             dto.setTotalLP(pairBalances.getTotalLP());
             dto.setBlockTimeLast(pairBalances.getBlockTimeLast());
@@ -58,6 +62,6 @@ public class StableSwapPairCacherImpl implements StableSwapPairCacher {
 
     @Override
     public boolean isExist(String pairAddress) {
-        return CACHE_MAP.containsKey(pairAddress);
+        return this.get(pairAddress) != null;
     }
 }

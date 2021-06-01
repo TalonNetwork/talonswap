@@ -53,7 +53,7 @@ public class StableSwapTradeBus extends BaseBus {
     /**
      * 流出池子的token的位置
      */
-    private byte receiveIndex;
+    private byte tokenOutIndex;
     /**
      * 流出池子的token数量
      */
@@ -63,13 +63,13 @@ public class StableSwapTradeBus extends BaseBus {
      */
     private byte[] to;
 
-    public StableSwapTradeBus(byte[] pairAddress, BigInteger[] changeBalances, BigInteger[] balances, BigInteger[] amountsIn, BigInteger[] unLiquidityAwardFees, byte receiveIndex, BigInteger amountOut, byte[] to) {
+    public StableSwapTradeBus(byte[] pairAddress, BigInteger[] changeBalances, BigInteger[] balances, BigInteger[] amountsIn, BigInteger[] unLiquidityAwardFees, byte tokenOutIndex, BigInteger amountOut, byte[] to) {
         this.pairAddress = pairAddress;
         this.changeBalances = changeBalances;
         this.balances = balances;
         this.amountsIn = amountsIn;
         this.unLiquidityAwardFees = unLiquidityAwardFees;
-        this.receiveIndex = receiveIndex;
+        this.tokenOutIndex = tokenOutIndex;
         this.amountOut = amountOut;
         this.to = to;
     }
@@ -114,12 +114,12 @@ public class StableSwapTradeBus extends BaseBus {
         this.unLiquidityAwardFees = unLiquidityAwardFees;
     }
 
-    public byte getReceiveIndex() {
-        return receiveIndex;
+    public byte getTokenOutIndex() {
+        return tokenOutIndex;
     }
 
-    public void setReceiveIndex(byte receiveIndex) {
-        this.receiveIndex = receiveIndex;
+    public void setTokenOutIndex(byte tokenOutIndex) {
+        this.tokenOutIndex = tokenOutIndex;
     }
 
     public BigInteger getAmountOut() {

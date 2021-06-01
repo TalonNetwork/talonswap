@@ -15,18 +15,15 @@ import java.io.IOException;
 public class StableAddLiquidityData extends BaseNulsData {
 
     private byte[] to;
-    private long deadline;
 
     @Override
     protected void serializeToStream(NulsOutputStreamBuffer stream) throws IOException {
         stream.write(to);
-        stream.writeUint32(deadline);
     }
 
     @Override
     public void parse(NulsByteBuffer byteBuffer) throws NulsException {
         this.to = byteBuffer.readBytes(Address.ADDRESS_LENGTH);
-        this.deadline = byteBuffer.readUint32();
     }
 
     @Override
@@ -43,14 +40,6 @@ public class StableAddLiquidityData extends BaseNulsData {
 
     public void setTo(byte[] to) {
         this.to = to;
-    }
-
-    public long getDeadline() {
-        return deadline;
-    }
-
-    public void setDeadline(long deadline) {
-        this.deadline = deadline;
     }
 
 }

@@ -64,6 +64,8 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
             return null;
         }
         Chain chain = chainManager.getChain(chainId);
+        if (blockHeader == null) blockHeader = chain.getLatestBasicBlock().toBlockHeader();
+
         Map<String, Object> resultMap = new HashMap<>(SwapConstant.INIT_CAPACITY_2);
         if (chain == null) {
             Log.error("Chains do not exist.");
@@ -166,6 +168,7 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
                 // 更新Pair的资金池和发行总量
                 pair.update(bus.getLiquidity().negate(), bus.getReserve0().subtract(bus.getAmount0()), bus.getReserve1().subtract(bus.getAmount1()), bus.getReserve0(), bus.getReserve1(), blockHeader.getHeight(), blockHeader.getTime());
                 swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
+                logger.info("[commit] Swap Remove Liquidity, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -183,11 +186,10 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
         try {
             chain = chainManager.getChain(chainId);
             NulsLogger logger = chain.getLogger();
-            Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
-                SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
+                    return true;
                 }
                 if (!result.isSuccess()) {
                     return true;
@@ -198,6 +200,7 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
                 // 回滚Pair的资金池
                 pair.rollback(bus.getLiquidity().negate(), bus.getReserve0(), bus.getReserve1(), bus.getPreBlockHeight(), bus.getPreBlockTime());
                 swapExecuteResultStorageService.delete(chainId, tx.getHash());
+                logger.info("[rollback] Swap Remove Liquidity, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);

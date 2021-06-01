@@ -14,7 +14,7 @@ import java.io.File;
  * @date: 2019/03/14
  */
 @Component
-@Configuration(domain = ModuleE.Constant.CONVERTER)
+@Configuration(domain = ModuleE.Constant.SWAP)
 public class SwapConfig extends ConfigBean implements ModuleConfig {
 
     private static final long serialVersionUID = 1L;
@@ -40,6 +40,19 @@ public class SwapConfig extends ConfigBean implements ModuleConfig {
      * 提现黑洞公钥(与设置别名共用一个公钥)
      */
     private String blackHolePublicKey;
+
+    /**
+     * 手续费奖励的系统接收地址公钥
+     */
+    private String awardFeeSystemAddressPublicKey;
+
+    public String getAwardFeeSystemAddressPublicKey() {
+        return awardFeeSystemAddressPublicKey;
+    }
+
+    public void setAwardFeeSystemAddressPublicKey(String awardFeeSystemAddressPublicKey) {
+        this.awardFeeSystemAddressPublicKey = awardFeeSystemAddressPublicKey;
+    }
 
     public String getDataPath() {
         return dataPath;

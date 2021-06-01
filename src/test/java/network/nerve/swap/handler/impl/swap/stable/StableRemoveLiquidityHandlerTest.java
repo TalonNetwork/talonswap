@@ -157,7 +157,7 @@ public class StableRemoveLiquidityHandlerTest {
         BigInteger amountLP = toAddressBalanceLP.divide(BigInteger.valueOf(4)).multiply(BigInteger.valueOf(3));
 
         Transaction tx = TxAssembleUtil.asmbStableSwapRemoveLiquidity(chainId, from,
-                amountLP, tokenLP, new byte[]{1, 0}, stablePairAddressBytes, deadline, to, tempBalanceManager);
+                amountLP, tokenLP, new byte[]{1, 0}, stablePairAddressBytes, to, tempBalanceManager);
         tempBalanceManager.refreshTempBalance(chainId, tx, header.getTime());
         System.out.println(String.format("\t用户交易: \n%s", tx.format()));
         NerveCallback<SwapResult> callback = new NerveCallback<>() {
@@ -192,7 +192,8 @@ public class StableRemoveLiquidityHandlerTest {
     }
 
     protected JunitCase getCase1() throws Exception {
-        String caseDesc = "异常-移除流动性超时";
+        //TODO pierre 异常case
+        String caseDesc = "异常-移除流动性";
         System.out.println(String.format("//////////////////////////////////////////////////【%s】//////////////////////////////////////////////////", caseDesc));
         int chainId = chain.getChainId();
         BatchInfo batchInfo = chain.getBatchInfo();
@@ -200,18 +201,13 @@ public class StableRemoveLiquidityHandlerTest {
         LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
         String from = address21;
 
-        long deadline = System.currentTimeMillis() / 1000 + 3;
-        // 造成超时
-        TimeUnit.SECONDS.sleep(5);
-        header.setTime(System.currentTimeMillis() / 1000);
-
         byte[] to = AddressTool.getAddress(address21);
 
         BigInteger toAddressBalanceLP = tempBalanceManager.getBalance(to, tokenLP.getChainId(), tokenLP.getAssetId()).getData().getBalance();
         BigInteger amountLP = toAddressBalanceLP.divide(BigInteger.valueOf(2));
 
         Transaction tx = TxAssembleUtil.asmbStableSwapRemoveLiquidity(chainId, from,
-                amountLP, tokenLP, new byte[]{1, 0}, stablePairAddressBytes, deadline, to, tempBalanceManager);
+                amountLP, tokenLP, new byte[]{1, 0}, stablePairAddressBytes, to, tempBalanceManager);
         tempBalanceManager.refreshTempBalance(chainId, tx, header.getTime());
         System.out.println(String.format("\t用户交易: \n%s", tx.format()));
         NerveCallback<SwapResult> callback = new NerveCallback<>() {

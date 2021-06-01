@@ -103,10 +103,13 @@ public class PersistenceStablePair extends AbstractStablePair {
     }
 
     private void savePairBalances(String pairAddress, BigInteger[] balancesCurrent, BigInteger totalLP, Long blockTime, Long blockHeight) throws Exception {
+        int lengthCurrent = balancesCurrent.length;
         StableSwapPairBalancesPo pairBalancesPo = swapStablePairBalancesStorageService.getPairBalances(pairAddress);
+        if (pairBalancesPo == null) {
+            pairBalancesPo = new StableSwapPairBalancesPo(AddressTool.getAddress(pairAddress), lengthCurrent);
+        }
         BigInteger[] balancesFromDB = pairBalancesPo.getBalances();
         int lengthFromDB = balancesFromDB.length;
-        int lengthCurrent = balancesCurrent.length;
         // 若当前的长度小于DB中的长度，说明交易对中添加了币种，则不能覆盖更新PO
         if (lengthCurrent < lengthFromDB) {
             for (int i = 0; i < lengthCurrent; i++) {

@@ -31,40 +31,70 @@ import java.math.BigInteger;
  */
 public class RealAddLiquidityOrderDTO {
 
-    private BigInteger[] realAddLiquidity;
-    private BigInteger[] reserves;
-    private BigInteger[] refund;
+    private BigInteger realAddLiquidityA;
+    private BigInteger realAddLiquidityB;
+    private BigInteger reservesA;
+    private BigInteger reservesB;
+    private BigInteger refundA;
+    private BigInteger refundB;
     private BigInteger liquidity;
 
     public RealAddLiquidityOrderDTO(BigInteger[] realAddLiquidity, BigInteger[] reserves, BigInteger[] refund, BigInteger liquidity) {
-        this.realAddLiquidity = realAddLiquidity;
-        this.reserves = reserves;
-        this.refund = refund;
+        this.realAddLiquidityA = realAddLiquidity[0];
+        this.realAddLiquidityB = realAddLiquidity[1];
+        this.reservesA = reserves[0];
+        this.reservesB = reserves[1];
+        this.refundA = refund[0];
+        this.refundB = refund[1];
         this.liquidity = liquidity;
     }
 
-    public BigInteger[] getRealAddLiquidity() {
-        return realAddLiquidity;
+    public BigInteger getRealAddLiquidityA() {
+        return realAddLiquidityA;
     }
 
-    public void setRealAddLiquidity(BigInteger[] realAddLiquidity) {
-        this.realAddLiquidity = realAddLiquidity;
+    public void setRealAddLiquidityA(BigInteger realAddLiquidityA) {
+        this.realAddLiquidityA = realAddLiquidityA;
     }
 
-    public BigInteger[] getReserves() {
-        return reserves;
+    public BigInteger getRealAddLiquidityB() {
+        return realAddLiquidityB;
     }
 
-    public void setReserves(BigInteger[] reserves) {
-        this.reserves = reserves;
+    public void setRealAddLiquidityB(BigInteger realAddLiquidityB) {
+        this.realAddLiquidityB = realAddLiquidityB;
     }
 
-    public BigInteger[] getRefund() {
-        return refund;
+    public BigInteger getReservesA() {
+        return reservesA;
     }
 
-    public void setRefund(BigInteger[] refund) {
-        this.refund = refund;
+    public void setReservesA(BigInteger reservesA) {
+        this.reservesA = reservesA;
+    }
+
+    public BigInteger getReservesB() {
+        return reservesB;
+    }
+
+    public void setReservesB(BigInteger reservesB) {
+        this.reservesB = reservesB;
+    }
+
+    public BigInteger getRefundA() {
+        return refundA;
+    }
+
+    public void setRefundA(BigInteger refundA) {
+        this.refundA = refundA;
+    }
+
+    public BigInteger getRefundB() {
+        return refundB;
+    }
+
+    public void setRefundB(BigInteger refundB) {
+        this.refundB = refundB;
     }
 
     public BigInteger getLiquidity() {

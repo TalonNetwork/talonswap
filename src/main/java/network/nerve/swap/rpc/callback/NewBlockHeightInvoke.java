@@ -3,6 +3,7 @@ package network.nerve.swap.rpc.callback;
 import io.nuls.core.constant.SyncStatusEnum;
 import io.nuls.core.rpc.invoke.BaseInvoke;
 import io.nuls.core.rpc.model.message.Response;
+import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.model.Chain;
 
 import java.util.HashMap;
@@ -28,7 +29,26 @@ public class NewBlockHeightInvoke extends BaseInvoke {
             chain.getLogger().error("[订阅事件]最新区块高度为null");
             return;
         }
+        if (null == hashMap.get("time")) {
+            chain.getLogger().error("[订阅事件]最新区块高度时间为null");
+            return;
+        }
+        if (null == hashMap.get("syncStatusEnum")) {
+            chain.getLogger().error("[订阅事件]当前区块同步模式");
+            return;
+        }
+        int syncStatus = Integer.valueOf(hashMap.get("syncStatusEnum").toString());
+        SyncStatusEnum syncStatusEnum = SyncStatusEnum.getEnum(syncStatus);
+        if (null == syncStatusEnum) {
+            chain.getLogger().error("[订阅事件]当前区块同步模式状态为null");
+            return;
+        }
         long height = Long.valueOf(hashMap.get("value").toString());
-        chain.setBestHeight(height);
+        long time = Long.valueOf(hashMap.get("time").toString());
+        SwapContext.LATEST_BLOCK_HEIGHT = height;
+        chain.getLatestBasicBlock().setHeight(height);
+        chain.getLatestBasicBlock().setTime(time);
+        chain.getLatestBasicBlock().setSyncStatusEnum(syncStatusEnum);
+        chain.getLogger().debug("[订阅事件]最新区块高度:{} blockTime:{} syncStatus:{}", height, time, syncStatusEnum.name());
     }
 }

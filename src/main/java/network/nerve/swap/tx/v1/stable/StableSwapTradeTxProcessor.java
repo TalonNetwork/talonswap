@@ -14,7 +14,7 @@ import io.nuls.core.log.Log;
 import io.nuls.core.log.logback.NulsLogger;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
-import network.nerve.swap.handler.impl.stable.StableSwapTokenHandler;
+import network.nerve.swap.handler.impl.stable.StableSwapTradeHandler;
 import network.nerve.swap.help.IPairFactory;
 import network.nerve.swap.help.IStablePair;
 import network.nerve.swap.manager.ChainManager;
@@ -36,7 +36,7 @@ import java.util.Map;
 /**
  * @author Niels
  */
-@Component("StableRemoveLiquidityTxProcessorV1")
+@Component("StableSwapTradeTxProcessorV1")
 public class StableSwapTradeTxProcessor implements TransactionProcessor {
 
     @Autowired
@@ -46,7 +46,7 @@ public class StableSwapTradeTxProcessor implements TransactionProcessor {
     @Autowired
     private SwapExecuteResultStorageService swapExecuteResultStorageService;
     @Autowired
-    private StableSwapTokenHandler stableSwapTokenHandler;
+    private StableSwapTradeHandler stableSwapTradeHandler;
 
     @Override
     public int getType() {
@@ -59,6 +59,8 @@ public class StableSwapTradeTxProcessor implements TransactionProcessor {
             return null;
         }
         Chain chain = chainManager.getChain(chainId);
+        if (blockHeader == null) blockHeader = chain.getLatestBasicBlock().toBlockHeader();
+
         Map<String, Object> resultMap = new HashMap<>(SwapConstant.INIT_CAPACITY_2);
         if (chain == null) {
             Log.error("Chains do not exist.");
@@ -85,20 +87,13 @@ public class StableSwapTradeTxProcessor implements TransactionProcessor {
                 errorCode = e.getErrorCode().getCode();
                 continue;
             }
-            long deadline = txData.getDeadline();
-            if (blockHeader.getTime() > deadline) {
-                logger.error("Tx EXPIRED! hash-{}", tx.getHash().toHex());
-                failsList.add(tx);
-                errorCode = SwapErrorCode.EXPIRED.getCode();
-                continue;
-            }
             CoinData coinData;
             StableSwapTradeDTO dto;
             try {
-                byte receiveIndex = txData.getReceiveIndex();
+                byte tokenOutIndex = txData.getTokenOutIndex();
                 coinData = tx.getCoinDataInstance();
-                dto = stableSwapTokenHandler.getStableSwapTradeInfo(chainId, coinData, iPairFactory, receiveIndex);
-                SwapUtils.calStableSwapTradeBusiness(chainId, iPairFactory, dto.getAmountsIn(), receiveIndex, dto.getPairAddress(), txData.getTo());
+                dto = stableSwapTradeHandler.getStableSwapTradeInfo(chainId, coinData, iPairFactory, tokenOutIndex);
+                SwapUtils.calStableSwapTradeBusiness(chainId, iPairFactory, dto.getAmountsIn(), tokenOutIndex, dto.getPairAddress(), txData.getTo());
             } catch (NulsException e) {
                 Log.error(e);
                 failsList.add(tx);
@@ -121,6 +116,9 @@ public class StableSwapTradeTxProcessor implements TransactionProcessor {
             chain = chainManager.getChain(chainId);
             NulsLogger logger = chain.getLogger();
             Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
+            if (swapResultMap == null) {
+                return true;
+            }
             for (Transaction tx : txs) {
                 // 从执行结果中提取业务数据
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
@@ -129,12 +127,13 @@ public class StableSwapTradeTxProcessor implements TransactionProcessor {
                 }
                 StableSwapTradeBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), StableSwapTradeBus.class);
                 CoinData coinData = tx.getCoinDataInstance();
-                StableSwapTradeDTO dto = stableSwapTokenHandler.getStableSwapTradeInfo(chainId, coinData, iPairFactory, bus.getReceiveIndex());
+                StableSwapTradeDTO dto = stableSwapTradeHandler.getStableSwapTradeInfo(chainId, coinData, iPairFactory, bus.getTokenOutIndex());
                 String pairAddress = AddressTool.getStringAddressByBytes(dto.getPairAddress());
                 IStablePair stablePair = iPairFactory.getStablePair(pairAddress);
                 // 更新Pair的资金池和发行总量
                 stablePair.update(dto.getUserAddress(), BigInteger.ZERO, bus.getChangeBalances(), bus.getBalances(), blockHeader.getHeight(), blockHeader.getTime());
                 swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
+                logger.info("[commit] Stable Swap Trade, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -152,23 +151,23 @@ public class StableSwapTradeTxProcessor implements TransactionProcessor {
         try {
             chain = chainManager.getChain(chainId);
             NulsLogger logger = chain.getLogger();
-            Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
-                SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
+                    return true;
                 }
                 if (!result.isSuccess()) {
                     return true;
                 }
                 StableSwapTradeBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), StableSwapTradeBus.class);
                 CoinData coinData = tx.getCoinDataInstance();
-                StableSwapTradeDTO dto = stableSwapTokenHandler.getStableSwapTradeInfo(chainId, coinData, iPairFactory, bus.getReceiveIndex());
+                StableSwapTradeDTO dto = stableSwapTradeHandler.getStableSwapTradeInfo(chainId, coinData, iPairFactory, bus.getTokenOutIndex());
                 String pairAddress = AddressTool.getStringAddressByBytes(dto.getPairAddress());
                 IStablePair stablePair = iPairFactory.getStablePair(pairAddress);
                 // 回滚Pair的资金池
                 stablePair.rollback(dto.getUserAddress(), BigInteger.ZERO, bus.getChangeBalances(), bus.getBalances(), bus.getPreBlockHeight(), bus.getPreBlockTime());
                 swapExecuteResultStorageService.delete(chainId, tx.getHash());
+                logger.info("[rollback] Stable Swap Trade, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);

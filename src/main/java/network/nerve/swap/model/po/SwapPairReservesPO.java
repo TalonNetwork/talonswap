@@ -17,6 +17,15 @@ public class SwapPairReservesPO {
     public SwapPairReservesPO() {
     }
 
+    public SwapPairReservesPO(byte[] address) {
+        this.address = address;
+        this.reserve0 = BigInteger.ZERO;
+        this.reserve1 = BigInteger.ZERO;
+        this.totalLP = BigInteger.ZERO;
+        this.blockTimeLast = 0L;
+        this.blockHeightLast = 0L;
+    }
+
     public SwapPairReservesPO(byte[] address, BigInteger reserve0, BigInteger reserve1, BigInteger totalLP, long blockTimeLast, long blockHeightLast) {
         this.address = address;
         this.reserve0 = reserve0;

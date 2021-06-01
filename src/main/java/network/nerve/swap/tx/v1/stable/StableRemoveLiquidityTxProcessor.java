@@ -58,6 +58,8 @@ public class StableRemoveLiquidityTxProcessor implements TransactionProcessor {
             return null;
         }
         Chain chain = chainManager.getChain(chainId);
+        if (blockHeader == null) blockHeader = chain.getLatestBasicBlock().toBlockHeader();
+
         Map<String, Object> resultMap = new HashMap<>(SwapConstant.INIT_CAPACITY_2);
         if (chain == null) {
             Log.error("Chains do not exist.");
@@ -82,13 +84,6 @@ public class StableRemoveLiquidityTxProcessor implements TransactionProcessor {
                 Log.error(e);
                 failsList.add(tx);
                 errorCode = e.getErrorCode().getCode();
-                continue;
-            }
-            long deadline = txData.getDeadline();
-            if (blockHeader.getTime() > deadline) {
-                logger.error("Tx EXPIRED! hash-{}", tx.getHash().toHex());
-                failsList.add(tx);
-                errorCode = SwapErrorCode.EXPIRED.getCode();
                 continue;
             }
             CoinData coinData;
@@ -133,6 +128,7 @@ public class StableRemoveLiquidityTxProcessor implements TransactionProcessor {
                 // 更新Pair的资金池和发行总量
                 stablePair.update(dto.getUserAddress(), bus.getLiquidity().negate(), SwapUtils.convertNegate(bus.getAmounts()), bus.getBalances(), blockHeader.getHeight(), blockHeader.getTime());
                 swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
+                logger.info("[commit] Stable Swap Remove Liquidity, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -150,11 +146,10 @@ public class StableRemoveLiquidityTxProcessor implements TransactionProcessor {
         try {
             chain = chainManager.getChain(chainId);
             NulsLogger logger = chain.getLogger();
-            Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
-                SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
+                    return true;
                 }
                 if (!result.isSuccess()) {
                     return true;
@@ -167,6 +162,7 @@ public class StableRemoveLiquidityTxProcessor implements TransactionProcessor {
                 // 回滚Pair的资金池
                 stablePair.rollback(dto.getUserAddress(), bus.getLiquidity().negate(), SwapUtils.convertNegate(bus.getAmounts()), bus.getBalances(), bus.getPreBlockHeight(), bus.getPreBlockTime());
                 swapExecuteResultStorageService.delete(chainId, tx.getHash());
+                logger.info("[rollback] Stable Swap Remove Liquidity, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);

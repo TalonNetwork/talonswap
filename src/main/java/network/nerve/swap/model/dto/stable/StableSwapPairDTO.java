@@ -80,7 +80,7 @@ public class StableSwapPairDTO {
         sb.append(",\"totalLP\":")
                 .append(totalLP);
         sb.append(",\"balances\":")
-                .append(Arrays.toString(balances));
+                .append(Arrays.deepToString(balances));
         sb.append(",\"blockTimeLast\":")
                 .append(blockTimeLast);
         sb.append(",\"blockHeightLast\":")

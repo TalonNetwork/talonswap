@@ -5,7 +5,6 @@ import io.nuls.core.core.annotation.Component;
 import network.nerve.swap.cache.SwapPairCacher;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.model.ValidaterResult;
-import network.nerve.swap.model.dto.SwapPairDTO;
 
 /**
  * @author Niels
@@ -28,17 +27,6 @@ public class CreatePairTxValidater {
         }
         return ValidaterResult.getSuccess();
     }
-
-
-
-
-
-
-
-
-
-
-
 
     public SwapPairCacher getCacher() {
         return cacher;

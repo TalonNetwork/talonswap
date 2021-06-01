@@ -140,7 +140,7 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
             LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
             Transaction sysDealTx = this.makeSystemDealTx(bus, dto, tokenLP, txData.getTo(), tx.getHash().toHex(), blockTime, tempBalanceManager);
             result.setSubTx(sysDealTx);
-            result.setSubTxStr(SwapUtils.tx2Hex(sysDealTx));
+            result.setSubTxStr(SwapUtils.nulsData2Hex(sysDealTx));
             // 更新临时余额
             tempBalanceManager.refreshTempBalance(chainId, sysDealTx, blockTime);
             // 更新临时数据
@@ -176,7 +176,7 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
                         .setToAmount(dto.getLiquidity()).endTo()
                       .build();
             result.setSubTx(refundTx);
-            String refundTxStr = SwapUtils.tx2Hex(refundTx);
+            String refundTxStr = SwapUtils.nulsData2Hex(refundTx);
             result.setSubTxStr(refundTxStr);
             // 更新临时余额
             tempBalanceManager.refreshTempBalance(chainId, refundTx, blockTime);

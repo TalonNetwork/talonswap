@@ -1,5 +1,7 @@
 package network.nerve.swap.model.po.stable;
 
+import network.nerve.swap.utils.SwapUtils;
+
 import java.math.BigInteger;
 
 /**
@@ -21,6 +23,14 @@ public class StableSwapPairBalancesPo {
         this.balances = balances;
         this.blockTimeLast = blockTimeLast;
         this.blockHeightLast = blockHeightLast;
+    }
+
+    public StableSwapPairBalancesPo(byte[] address, int length) {
+        this.address = address;
+        this.totalLP = BigInteger.ZERO;
+        this.balances = SwapUtils.emptyFillZero(new BigInteger[length]);
+        this.blockTimeLast = 0L;
+        this.blockHeightLast = 0L;
     }
 
     public byte[] getAddress() {

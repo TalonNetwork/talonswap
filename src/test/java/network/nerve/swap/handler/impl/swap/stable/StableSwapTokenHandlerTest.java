@@ -33,7 +33,7 @@ import network.nerve.swap.JunitUtils;
 import network.nerve.swap.cache.StableSwapPairCacher;
 import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.handler.ISwapHandler;
-import network.nerve.swap.handler.impl.stable.StableSwapTokenHandler;
+import network.nerve.swap.handler.impl.stable.StableSwapTradeHandler;
 import network.nerve.swap.help.IPairFactory;
 import network.nerve.swap.help.IStablePair;
 import network.nerve.swap.manager.LedgerTempBalanceManager;
@@ -41,7 +41,6 @@ import network.nerve.swap.model.Chain;
 import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.bo.BatchInfo;
 import network.nerve.swap.model.bo.SwapResult;
-import network.nerve.swap.model.business.stable.StableRemoveLiquidityBus;
 import network.nerve.swap.model.business.stable.StableSwapTradeBus;
 import network.nerve.swap.model.dto.stable.StableSwapPairDTO;
 import network.nerve.swap.utils.BeanUtilTest;
@@ -55,7 +54,6 @@ import org.junit.Test;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static network.nerve.swap.constant.SwapConstant.BI_100;
 import static network.nerve.swap.constant.SwapConstant.BI_1000;
@@ -69,7 +67,7 @@ public class StableSwapTokenHandlerTest {
 
     protected StableAddLiquidityHandlerTest stableAddLiquidityHandlerTest;
     protected StableRemoveLiquidityHandlerTest stableRemoveLiquidityHandlerTest;
-    protected StableSwapTokenHandler handler;
+    protected StableSwapTradeHandler handler;
     protected StableSwapPairCacher stableSwapPairCacher;
     protected IPairFactory iPairFactory;
     protected Chain chain;
@@ -89,7 +87,7 @@ public class StableSwapTokenHandlerTest {
         stableRemoveLiquidityHandlerTest = new StableRemoveLiquidityHandlerTest();
         stableRemoveLiquidityHandlerTest.init();
         stableAddLiquidityHandlerTest = stableRemoveLiquidityHandlerTest.stableAddLiquidityHandlerTest;
-        handler = new StableSwapTokenHandler();
+        handler = new StableSwapTradeHandler();
         stableSwapPairCacher = stableAddLiquidityHandlerTest.stableSwapPairCacher;
         iPairFactory = stableAddLiquidityHandlerTest.iPairFactory;
         chain = stableAddLiquidityHandlerTest.chain;
@@ -155,10 +153,10 @@ public class StableSwapTokenHandlerTest {
         byte[] to = AddressTool.getAddress(address20);
         BigInteger[] amountsIn = new BigInteger[]{BigInteger.valueOf(100_00000000L)};
         NerveToken[] tokensIn = new NerveToken[]{token1};
-        byte receiveIndex = 0;
+        byte tokenOutIndex = 0;
         byte[] feeTo = null;
         Transaction tx = TxAssembleUtil.asmbStableSwapTrade(chainId, from,
-                amountsIn, tokensIn, receiveIndex, feeTo, stablePairAddressBytes, deadline, to, tempBalanceManager);
+                amountsIn, tokensIn, tokenOutIndex, feeTo, stablePairAddressBytes, to, tempBalanceManager);
         tempBalanceManager.refreshTempBalance(chainId, tx, header.getTime());
         System.out.println(String.format("\t用户交易: \n%s", tx.format()));
         NerveCallback<SwapResult> callback = new NerveCallback<>() {
@@ -190,7 +188,8 @@ public class StableSwapTokenHandlerTest {
     }
 
     protected JunitCase getCase1() throws Exception {
-        String caseDesc = "异常-币币交易超时";
+        //TODO pierre 异常case
+        String caseDesc = "异常-币币交易";
         System.out.println(String.format("//////////////////////////////////////////////////【%s】//////////////////////////////////////////////////", caseDesc));
         int chainId = chain.getChainId();
         BatchInfo batchInfo = chain.getBatchInfo();
@@ -198,18 +197,13 @@ public class StableSwapTokenHandlerTest {
         LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
         String from = address20;
 
-        long deadline = System.currentTimeMillis() / 1000 + 3;
-        // 造成超时
-        TimeUnit.SECONDS.sleep(5);
-        header.setTime(System.currentTimeMillis() / 1000);
-
         byte[] to = AddressTool.getAddress(address20);
         BigInteger[] amountsIn = new BigInteger[]{BigInteger.valueOf(10_00000000L)};
         NerveToken[] tokensIn = new NerveToken[]{token1};
-        byte receiveIndex = 0;
+        byte tokenOutIndex = 0;
         byte[] feeTo = null;
         Transaction tx = TxAssembleUtil.asmbStableSwapTrade(chainId, from,
-                amountsIn, tokensIn, receiveIndex, feeTo, stablePairAddressBytes, deadline, to, tempBalanceManager);
+                amountsIn, tokensIn, tokenOutIndex, feeTo, stablePairAddressBytes, to, tempBalanceManager);
         tempBalanceManager.refreshTempBalance(chainId, tx, header.getTime());
         System.out.println(String.format("\t用户交易: \n%s", tx.format()));
         NerveCallback<SwapResult> callback = new NerveCallback<>() {

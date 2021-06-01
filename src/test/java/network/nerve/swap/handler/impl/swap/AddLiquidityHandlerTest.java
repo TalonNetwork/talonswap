@@ -26,10 +26,8 @@ package network.nerve.swap.handler.impl.swap;
 import io.nuls.base.basic.AddressTool;
 import io.nuls.base.data.BlockHeader;
 import io.nuls.base.data.Transaction;
-import io.nuls.core.basic.Result;
 import io.nuls.core.core.ioc.SpringLiteContext;
 import io.nuls.core.crypto.HexUtil;
-import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.logback.LoggerBuilder;
 import io.nuls.core.rpc.model.ModuleE;
 import network.nerve.swap.JunitCase;
@@ -41,7 +39,6 @@ import network.nerve.swap.config.ConfigBean;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.handler.ISwapHandler;
 import network.nerve.swap.handler.impl.AddLiquidityHandler;
-import network.nerve.swap.help.IPair;
 import network.nerve.swap.help.IPairFactory;
 import network.nerve.swap.help.impl.TemporaryPairFactory;
 import network.nerve.swap.manager.ChainManager;
@@ -63,7 +60,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -279,9 +275,8 @@ public class AddLiquidityHandlerTest {
         BigInteger amountB = BigInteger.valueOf(200_000000L);
         RealAddLiquidityOrderDTO dto = SwapUtils.calcAddLiquidity(chainId, iPairFactory, token0, token1, amountA, amountB, BigInteger.ZERO, BigInteger.ZERO);
 
-        BigInteger[] _realAddLiquidity = dto.getRealAddLiquidity();
-        BigInteger amountAMin = _realAddLiquidity[0];
-        BigInteger amountBMin = _realAddLiquidity[1];
+        BigInteger amountAMin = dto.getRealAddLiquidityA();
+        BigInteger amountBMin = dto.getRealAddLiquidityB();
         long deadline = System.currentTimeMillis() / 1000 + 300;
         String from = address20;
         byte[] to = AddressTool.getAddress(address21);
@@ -330,9 +325,8 @@ public class AddLiquidityHandlerTest {
         BigInteger amountB = BigInteger.valueOf(200_000000L);
         RealAddLiquidityOrderDTO dto = SwapUtils.calcAddLiquidity(chainId, iPairFactory, token0, token1, amountA, amountB, BigInteger.ZERO, BigInteger.ZERO);
 
-        BigInteger[] _realAddLiquidity = dto.getRealAddLiquidity();
-        BigInteger amountAMin = _realAddLiquidity[0];
-        BigInteger amountBMin = _realAddLiquidity[1];
+        BigInteger amountAMin = dto.getRealAddLiquidityA();
+        BigInteger amountBMin = dto.getRealAddLiquidityB();
         long deadline = System.currentTimeMillis() / 1000 + 3;
         // 造成超时
         TimeUnit.SECONDS.sleep(5);
