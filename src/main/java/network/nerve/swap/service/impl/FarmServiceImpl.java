@@ -61,6 +61,7 @@ import network.nerve.swap.utils.SwapUtils;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 
 /**
  * @author: PierreLuo
@@ -372,9 +373,9 @@ public class FarmServiceImpl implements FarmService {
 
         FarmInfoDTO dto = new FarmInfoDTO();
         dto.setFarmHash(farmHash);
-        dto.setSyrupPerBlock(new BigDecimal(farm.getSyrupPerBlock()).movePointLeft(syrupLedgerAssetDTO.getDecimalPlace()).setScale(2).doubleValue());
-        dto.setSyrupBalance(new BigDecimal(farm.getSyrupTokenBalance()).movePointLeft(syrupLedgerAssetDTO.getDecimalPlace()).setScale(2).doubleValue());
-        dto.setStakeBalance(new BigDecimal(farm.getStakeTokenBalance()).movePointLeft(stakeLedgerAssetDTO.getDecimalPlace()).setScale(2).doubleValue());
+        dto.setSyrupPerBlock(new BigDecimal(farm.getSyrupPerBlock()).movePointLeft(syrupLedgerAssetDTO.getDecimalPlace()).setScale(2,RoundingMode.DOWN).doubleValue());
+        dto.setSyrupBalance(new BigDecimal(farm.getSyrupTokenBalance()).movePointLeft(syrupLedgerAssetDTO.getDecimalPlace()).setScale(2,RoundingMode.DOWN).doubleValue());
+        dto.setStakeBalance(new BigDecimal(farm.getStakeTokenBalance()).movePointLeft(stakeLedgerAssetDTO.getDecimalPlace()).setScale(2,RoundingMode.DOWN).doubleValue());
 
         return Result.getSuccess(dto);
     }
@@ -399,7 +400,7 @@ public class FarmServiceImpl implements FarmService {
         FarmUserInfoDTO dto = new FarmUserInfoDTO();
         dto.setFarmHash(farmHash);
         dto.setUserAddress(userAddress);
-        dto.setAmount(new BigDecimal(user.getAmount()).movePointLeft(stakeLedgerAssetDTO.getDecimalPlace()).setScale(2).doubleValue());
+        dto.setAmount(new BigDecimal(user.getAmount()).movePointLeft(stakeLedgerAssetDTO.getDecimalPlace()).setScale(2,RoundingMode.DOWN).doubleValue());
         if(user.getAmount().compareTo(BigInteger.ZERO) == 0){
             dto.setReward(0);
             return Result.getSuccess(dto);
@@ -412,7 +413,7 @@ public class FarmServiceImpl implements FarmService {
         }
 
         BigInteger reward = user.getAmount().multiply(accSyrupPerShare).divide(SwapConstant.BI_1E12).subtract(user.getRewardDebt());
-        dto.setReward(new BigDecimal(reward).movePointLeft(syrupLedgerAssetDTO.getDecimalPlace()).setScale(2).doubleValue());
+        dto.setReward(new BigDecimal(reward).movePointLeft(syrupLedgerAssetDTO.getDecimalPlace()).setScale(2, RoundingMode.DOWN).doubleValue());
         return Result.getSuccess(dto);
     }
 }

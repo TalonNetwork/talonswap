@@ -665,5 +665,16 @@ public class SwapServiceImpl implements SwapService {
         return this.newTx(chainId, prikeyHex, tx, logger);
     }
 
+    @Override
+    public Result<String> getPairAddressByTokenLP(int chainId, String tokenLP) {
+        String address = swapPairCacher.getPairAddressByTokenLP(chainId, SwapUtils.parseTokenStr(tokenLP));
+        if (StringUtils.isBlank(address)) {
+            address = stableSwapPairCacher.getPairAddressByTokenLP(chainId, SwapUtils.parseTokenStr(tokenLP));
+            if (StringUtils.isBlank(address)) {
+                return Result.getFailed(SwapErrorCode.DATA_NOT_FOUND);
+            }
+        }
+        return Result.getSuccess(address);
+    }
 
 }

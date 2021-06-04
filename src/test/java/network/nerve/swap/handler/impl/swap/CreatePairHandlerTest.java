@@ -123,6 +123,11 @@ public class CreatePairHandlerTest {
             }
 
             @Override
+            public String getPairAddressByTokenLP(int chainId, NerveToken tokenLP) {
+                return null;
+            }
+
+            @Override
             public SwapPairPO getPair(byte[] address) {
                 SwapPairPO po = new SwapPairPO(address);
                 po.setToken0(token0);

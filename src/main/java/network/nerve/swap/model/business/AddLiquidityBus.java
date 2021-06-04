@@ -32,14 +32,10 @@ import java.math.BigInteger;
 public class AddLiquidityBus extends BaseBus {
 
     /**
-     * tokenA是否为token0
-     */
-    private boolean firstTokenA;
-    /**
      * 实际添加的资产
      */
-    private BigInteger realAddAmountA;
-    private BigInteger realAddAmountB;
+    private BigInteger realAddAmount0;
+    private BigInteger realAddAmount1;
     /**
      * 获得的LP资产
      */
@@ -47,50 +43,41 @@ public class AddLiquidityBus extends BaseBus {
     /**
      * 当前池子余额（添加前）
      */
-    private BigInteger reserveA;
-    private BigInteger reserveB;
+    private BigInteger reserve0;
+    private BigInteger reserve1;
     /**
      * 最终退回给用户的资产
      */
-    private BigInteger refundAmountA;
-    private BigInteger refundAmountB;
+    private BigInteger refundAmount0;
+    private BigInteger refundAmount1;
 
     public AddLiquidityBus() {
     }
 
-    public AddLiquidityBus(boolean firstTokenA, BigInteger realAddAmountA, BigInteger realAddAmountB, BigInteger liquidity, BigInteger reserveA, BigInteger reserveB, BigInteger refundAmountA, BigInteger refundAmountB) {
-        this.firstTokenA = firstTokenA;
-        this.realAddAmountA = realAddAmountA;
-        this.realAddAmountB = realAddAmountB;
+    public AddLiquidityBus(BigInteger realAddAmount0, BigInteger realAddAmount1, BigInteger liquidity, BigInteger reserve0, BigInteger reserve1, BigInteger refundAmount0, BigInteger refundAmount1) {
+        this.realAddAmount0 = realAddAmount0;
+        this.realAddAmount1 = realAddAmount1;
         this.liquidity = liquidity;
-        this.reserveA = reserveA;
-        this.reserveB = reserveB;
-        this.refundAmountA = refundAmountA;
-        this.refundAmountB = refundAmountB;
+        this.reserve0 = reserve0;
+        this.reserve1 = reserve1;
+        this.refundAmount0 = refundAmount0;
+        this.refundAmount1 = refundAmount1;
     }
 
-    public boolean isFirstTokenA() {
-        return firstTokenA;
+    public BigInteger getRealAddAmount0() {
+        return realAddAmount0;
     }
 
-    public void setFirstTokenA(boolean firstTokenA) {
-        this.firstTokenA = firstTokenA;
+    public void setRealAddAmount0(BigInteger realAddAmount0) {
+        this.realAddAmount0 = realAddAmount0;
     }
 
-    public BigInteger getRealAddAmountA() {
-        return realAddAmountA;
+    public BigInteger getRealAddAmount1() {
+        return realAddAmount1;
     }
 
-    public void setRealAddAmountA(BigInteger realAddAmountA) {
-        this.realAddAmountA = realAddAmountA;
-    }
-
-    public BigInteger getRealAddAmountB() {
-        return realAddAmountB;
-    }
-
-    public void setRealAddAmountB(BigInteger realAddAmountB) {
-        this.realAddAmountB = realAddAmountB;
+    public void setRealAddAmount1(BigInteger realAddAmount1) {
+        this.realAddAmount1 = realAddAmount1;
     }
 
     public BigInteger getLiquidity() {
@@ -101,35 +88,35 @@ public class AddLiquidityBus extends BaseBus {
         this.liquidity = liquidity;
     }
 
-    public BigInteger getReserveA() {
-        return reserveA;
+    public BigInteger getReserve0() {
+        return reserve0;
     }
 
-    public void setReserveA(BigInteger reserveA) {
-        this.reserveA = reserveA;
+    public void setReserve0(BigInteger reserve0) {
+        this.reserve0 = reserve0;
     }
 
-    public BigInteger getReserveB() {
-        return reserveB;
+    public BigInteger getReserve1() {
+        return reserve1;
     }
 
-    public void setReserveB(BigInteger reserveB) {
-        this.reserveB = reserveB;
+    public void setReserve1(BigInteger reserve1) {
+        this.reserve1 = reserve1;
     }
 
-    public BigInteger getRefundAmountA() {
-        return refundAmountA;
+    public BigInteger getRefundAmount0() {
+        return refundAmount0;
     }
 
-    public void setRefundAmountA(BigInteger refundAmountA) {
-        this.refundAmountA = refundAmountA;
+    public void setRefundAmount0(BigInteger refundAmount0) {
+        this.refundAmount0 = refundAmount0;
     }
 
-    public BigInteger getRefundAmountB() {
-        return refundAmountB;
+    public BigInteger getRefundAmount1() {
+        return refundAmount1;
     }
 
-    public void setRefundAmountB(BigInteger refundAmountB) {
-        this.refundAmountB = refundAmountB;
+    public void setRefundAmount1(BigInteger refundAmount1) {
+        this.refundAmount1 = refundAmount1;
     }
 }

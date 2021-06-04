@@ -140,6 +140,11 @@ public class CreateStablePairHandlerTest {
             }
 
             @Override
+            public String getPairAddressByTokenLP(int chainId, NerveToken tokenLP) {
+                return null;
+            }
+
+            @Override
             public StableSwapPairPo getPair(byte[] address) {
                 StableSwapPairPo po = new StableSwapPairPo(address);
                 po.setTokenLP(tokenLP);

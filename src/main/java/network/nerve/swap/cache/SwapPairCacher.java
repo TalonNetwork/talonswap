@@ -1,5 +1,6 @@
 package network.nerve.swap.cache;
 
+import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.dto.SwapPairDTO;
 
 import java.util.Collection;
@@ -18,4 +19,6 @@ public interface SwapPairCacher {
     Collection<SwapPairDTO> getList();
 
     boolean isExist(String pairAddress);
+
+    String getPairAddressByTokenLP(int chainId, NerveToken tokenLP);
 }

@@ -1,5 +1,6 @@
 package network.nerve.swap.cache;
 
+import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.dto.stable.StableSwapPairDTO;
 
 /**
@@ -14,4 +15,6 @@ public interface StableSwapPairCacher {
     StableSwapPairDTO remove(String address);
 
     boolean isExist(String pairAddress);
+
+    String getPairAddressByTokenLP(int chainId, NerveToken tokenLP);
 }

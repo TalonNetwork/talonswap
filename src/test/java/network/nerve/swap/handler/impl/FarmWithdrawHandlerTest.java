@@ -159,7 +159,7 @@ public class FarmWithdrawHandlerTest {
                 assertNotNull(result);
                 Assert.assertTrue(result.isSuccess());
                 assertNotNull(result.getSubTx());
-//todo金额验证
+                //todo金额验证
                 CoinData coinData = null;
                 try {
                     coinData = result.getSubTx().getCoinDataInstance();
@@ -168,20 +168,21 @@ public class FarmWithdrawHandlerTest {
                     assertTrue(false);
                 }
                 assertEquals(coinData.getFrom().size(), 2);
+                assertNotNull(result.getBusiness());
+                FarmBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), FarmBus.class);
                 BigInteger reward = null;
                 for (CoinFrom from : coinData.getFrom()) {
                     if (from.getAssetsChainId() == po.getStakeToken().getChainId() && from.getAssetsId() == po.getStakeToken().getAssetId()) {
                         assertEquals(from.getAmount(), BigInteger.ONE);
                     } else if (from.getAssetsChainId() == po.getSyrupToken().getChainId() && from.getAssetsId() == po.getSyrupToken().getAssetId()) {
-                        reward = (BigInteger.valueOf(10000).multiply(po.getSyrupPerBlock()).multiply(SwapConstant.BI_1E12).divide(BigInteger.valueOf(9999)).add(new BigInteger("1000000000000000"))).multiply(currentAmount).divide(SwapConstant.BI_1E12).subtract(BigInteger.valueOf(1000000));
+                        BigInteger accPerShare = bus.getAccSyrupPerShareOld().add(BigInteger.valueOf(10000).multiply(po.getSyrupPerBlock()).multiply(SwapConstant.BI_1E12).divide(BigInteger.valueOf(9999)));
+                        reward = accPerShare.multiply(currentAmount).divide(SwapConstant.BI_1E12).subtract(bus.getUserRewardDebtOld());
                         assertEquals(from.getAmount(), reward);
                     }
                 }
-                assertNotNull(result.getBusiness());
-                FarmBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), FarmBus.class);
                 assertEquals(bus.getLastRewardBlockNew(), 20001);
                 assertEquals(bus.getUserAmountNew(), bus.getUserAmountOld().subtract(BigInteger.ONE));
-                assertEquals(bus.getUserRewardDebtNew(), reward.add(BigInteger.valueOf(1000000)));
+                assertEquals(bus.getUserRewardDebtNew(), bus.getAccSyrupPerShareNew().multiply(bus.getUserAmountNew()).divide(SwapConstant.BI_1E12));
 
 
                 assertEquals(bus.getSyrupBalanceNew(), bus.getSyrupBalanceOld().subtract(reward));
@@ -279,7 +280,7 @@ public class FarmWithdrawHandlerTest {
                 assertEquals(bus.getAccSyrupPerShareNew().divide(SwapConstant.BI_1E12), reward.divide(currentAmount));
                 assertEquals(bus.getLastRewardBlockNew(), 10001);
                 assertEquals(bus.getUserAmountNew(), bus.getUserAmountOld().subtract(BigInteger.ONE));
-                assertEquals(bus.getUserRewardDebtNew(), reward);
+                assertEquals(bus.getUserRewardDebtNew(), bus.getAccSyrupPerShareNew().multiply(bus.getUserAmountNew()).divide(SwapConstant.BI_1E12));
 
 
                 assertEquals(bus.getSyrupBalanceNew(), bus.getSyrupBalanceOld().subtract(reward));

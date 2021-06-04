@@ -1,5 +1,6 @@
 package network.nerve.swap.storage;
 
+import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.po.SwapPairPO;
 
 /**
@@ -14,6 +15,8 @@ public interface SwapPairStorageService {
     SwapPairPO getPair(byte[] address);
 
     SwapPairPO getPair(String address);
+
+    String getPairAddressByTokenLP(int chainId, NerveToken tokenLP);
 
     boolean delelePair(byte[] address) throws Exception;
 

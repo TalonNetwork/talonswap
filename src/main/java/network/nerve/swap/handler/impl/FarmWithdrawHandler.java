@@ -166,7 +166,7 @@ public class FarmWithdrawHandler extends SwapHandlerConstraints {
         batchInfo.getFarmTempManager().putFarm(farm);
         //更新用户状态数据
         user.setAmount(user.getAmount().subtract(txData.getAmount()));
-        user.setRewardDebt(user.getRewardDebt().add(reward));
+        user.setRewardDebt(user.getAmount().multiply(farm.getAccSyrupPerShare()).divide(SwapConstant.BI_1E12));
 
         bus.setAccSyrupPerShareNew(farm.getAccSyrupPerShare());
         bus.setLastRewardBlockNew(farm.getLastRewardBlock());

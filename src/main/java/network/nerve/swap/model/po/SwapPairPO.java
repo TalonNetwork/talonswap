@@ -68,11 +68,11 @@ public class SwapPairPO {
         sb.append("\"address\":")
                 .append('\"').append(AddressTool.getStringAddressByBytes(address)).append('\"');
         sb.append(",\"token0\":")
-                .append(token0.toString());
+                .append('\"').append(token0.str()).append('\"');
         sb.append(",\"token1\":")
-                .append(token1.toString());
+                .append('\"').append(token1.str()).append('\"');
         sb.append(",\"tokenLP\":")
-                .append(tokenLP.toString());
+                .append('\"').append(tokenLP.str()).append('\"');
         sb.append('}');
         return sb.toString();
     }

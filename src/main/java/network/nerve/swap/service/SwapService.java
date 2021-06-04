@@ -25,6 +25,7 @@ package network.nerve.swap.service;
 
 import io.nuls.base.data.Transaction;
 import io.nuls.core.basic.Result;
+import network.nerve.swap.model.NerveToken;
 
 import java.math.BigInteger;
 
@@ -167,5 +168,10 @@ public interface SwapService {
                                         int tokenOutIndex, String feeTo,
                                         String pairAddress,
                                         long deadline, String to);
+
+    /**
+     * 根据LP资产获取交易对地址
+     */
+    Result<String> getPairAddressByTokenLP(int chainId, String tokenLP);
 
 }

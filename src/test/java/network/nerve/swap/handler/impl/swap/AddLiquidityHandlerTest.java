@@ -129,6 +129,11 @@ public class AddLiquidityHandlerTest {
             }
 
             @Override
+            public String getPairAddressByTokenLP(int chainId, NerveToken tokenLP) {
+                return null;
+            }
+
+            @Override
             public boolean savePair(String address, SwapPairPO po) throws Exception {
                 return true;
             }
@@ -246,12 +251,12 @@ public class AddLiquidityHandlerTest {
                 AddLiquidityBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), AddLiquidityBus.class);
                 BigInteger toAddressBalanceLP = tempBalanceManager.getBalance(to, tokenLP.getChainId(), tokenLP.getAssetId()).getData().getBalance();
 
-                Assert.assertEquals("添加前的池子资产A", BigInteger.ZERO, bus.getReserveA());
-                Assert.assertEquals("添加前的池子资产B", BigInteger.ZERO, bus.getReserveB());
-                Assert.assertEquals("实际添加的资产A", amountA, bus.getRealAddAmountA());
-                Assert.assertEquals("实际添加的资产B", amountB, bus.getRealAddAmountB());
-                Assert.assertEquals("退回的资产A", BigInteger.ZERO, bus.getRefundAmountA());
-                Assert.assertEquals("退回的资产B", BigInteger.ZERO, bus.getRefundAmountB());
+                Assert.assertEquals("添加前的池子资产A", BigInteger.ZERO, bus.getReserve0());
+                Assert.assertEquals("添加前的池子资产B", BigInteger.ZERO, bus.getReserve1());
+                Assert.assertEquals("实际添加的资产A", amountA, bus.getRealAddAmount0());
+                Assert.assertEquals("实际添加的资产B", amountB, bus.getRealAddAmount1());
+                Assert.assertEquals("退回的资产A", BigInteger.ZERO, bus.getRefundAmount0());
+                Assert.assertEquals("退回的资产B", BigInteger.ZERO, bus.getRefundAmount1());
                 Assert.assertEquals("流动性份额", liquidity, bus.getLiquidity());
                 Assert.assertEquals("用户获得的流动性份额", toAddressBalanceLP, bus.getLiquidity());
                 Assert.assertEquals("交易hash", tx.getHash().toHex(), result.getHash());
@@ -297,12 +302,12 @@ public class AddLiquidityHandlerTest {
                 AddLiquidityBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), AddLiquidityBus.class);
                 BigInteger toAddressBalanceLP = tempBalanceManager.getBalance(to, tokenLP.getChainId(), tokenLP.getAssetId()).getData().getBalance();
 
-                Assert.assertEquals("添加前的池子资产A", BigInteger.valueOf(200_00000000L), bus.getReserveA());
-                Assert.assertEquals("添加前的池子资产B", BigInteger.valueOf(100_000000L), bus.getReserveB());
-                Assert.assertEquals("实际添加的资产A", amountA, bus.getRealAddAmountA());
-                Assert.assertEquals("实际添加的资产B", BigInteger.valueOf(150_000000L), bus.getRealAddAmountB());
-                Assert.assertEquals("退回的资产A", BigInteger.ZERO, bus.getRefundAmountA());
-                Assert.assertEquals("退回的资产B", BigInteger.valueOf(50_000000L), bus.getRefundAmountB());
+                Assert.assertEquals("添加前的池子资产A", BigInteger.valueOf(200_00000000L), bus.getReserve0());
+                Assert.assertEquals("添加前的池子资产B", BigInteger.valueOf(100_000000L), bus.getReserve1());
+                Assert.assertEquals("实际添加的资产A", amountA, bus.getRealAddAmount0());
+                Assert.assertEquals("实际添加的资产B", BigInteger.valueOf(150_000000L), bus.getRealAddAmount1());
+                Assert.assertEquals("退回的资产A", BigInteger.ZERO, bus.getRefundAmount0());
+                Assert.assertEquals("退回的资产B", BigInteger.valueOf(50_000000L), bus.getRefundAmount1());
                 Assert.assertEquals("流动性份额", liquidity, bus.getLiquidity());
                 Assert.assertEquals("用户获得的流动性份额", toAddressBalanceLP.subtract(_toAddressBalanceLP), bus.getLiquidity());
                 Assert.assertEquals("交易hash", tx.getHash().toHex(), result.getHash());

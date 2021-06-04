@@ -137,11 +137,7 @@ public class AddLiquidityTxProcessor implements TransactionProcessor {
                 AddLiquidityBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), AddLiquidityBus.class);
 
                 // 更新Pair的资金池和发行总量
-                if (bus.isFirstTokenA()) {
-                    pair.update(bus.getLiquidity(), bus.getRealAddAmountA().add(bus.getReserveA()), bus.getRealAddAmountB().add(bus.getReserveB()), bus.getReserveA(), bus.getReserveB(), blockHeader.getHeight(), blockHeader.getTime());
-                } else {
-                    pair.update(bus.getLiquidity(), bus.getRealAddAmountB().add(bus.getReserveB()), bus.getRealAddAmountA().add(bus.getReserveA()), bus.getReserveB(), bus.getReserveA(), blockHeader.getHeight(), blockHeader.getTime());
-                }
+                pair.update(bus.getLiquidity(), bus.getRealAddAmount0().add(bus.getReserve0()), bus.getRealAddAmount1().add(bus.getReserve1()), bus.getReserve0(), bus.getReserve1(), blockHeader.getHeight(), blockHeader.getTime());
                 swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
                 logger.info("[commit] Swap Add Liquidity, hash: {}", tx.getHash().toHex());
             }
@@ -173,11 +169,7 @@ public class AddLiquidityTxProcessor implements TransactionProcessor {
                 IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(coinData.getTo().get(0).getAddress()));
                 AddLiquidityBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), AddLiquidityBus.class);
                 // 回滚Pair的资金池
-                if (bus.isFirstTokenA()) {
-                    pair.rollback(bus.getLiquidity(), bus.getReserveA(), bus.getReserveB(), bus.getPreBlockHeight(), bus.getPreBlockTime());
-                } else {
-                    pair.rollback(bus.getLiquidity(), bus.getReserveB(), bus.getReserveA(), bus.getPreBlockHeight(), bus.getPreBlockTime());
-                }
+                pair.rollback(bus.getLiquidity(), bus.getReserve0(), bus.getReserve1(), bus.getPreBlockHeight(), bus.getPreBlockTime());
                 swapExecuteResultStorageService.delete(chainId, tx.getHash());
                 logger.info("[rollback] Swap Add Liquidity, hash: {}", tx.getHash().toHex());
             }

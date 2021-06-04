@@ -28,6 +28,7 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.model.StringUtils;
 import io.nuls.core.rockdb.service.RocksDBService;
 import network.nerve.swap.constant.SwapDBConstant;
+import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.po.stable.StableSwapPairPo;
 import network.nerve.swap.storage.SwapStablePairStorageService;
 import network.nerve.swap.utils.SwapDBUtil;
@@ -41,6 +42,7 @@ public class SwapStablePairStorageServiceImpl implements SwapStablePairStorageSe
 
     private final String baseArea = SwapDBConstant.DB_NAME_SWAP;
     private final String KEY_PREFIX = "SPAIR-";
+    private final String KEY_PREFIX_LP = "SPAIRLP-";
 
     @Override
     public boolean savePair(byte[] address, StableSwapPairPo po) throws Exception {
@@ -49,6 +51,8 @@ public class SwapStablePairStorageServiceImpl implements SwapStablePairStorageSe
         }
         int chainId = AddressTool.getChainIdByAddress(address);
         String addressStr = AddressTool.getStringAddressByBytes(address);
+        NerveToken tokenLP = po.getTokenLP();
+        RocksDBService.put(baseArea + chainId, SwapDBUtil.stringToBytes(KEY_PREFIX_LP + tokenLP.str()), address);
         return SwapDBUtil.putModel(baseArea + chainId, SwapDBUtil.stringToBytes(KEY_PREFIX + addressStr), po);
     }
 
@@ -79,4 +83,15 @@ public class SwapStablePairStorageServiceImpl implements SwapStablePairStorageSe
         return RocksDBService.delete(baseArea + chainId, SwapDBUtil.stringToBytes(KEY_PREFIX + address));
     }
 
+    @Override
+    public String getPairAddressByTokenLP(int chainId, NerveToken tokenLP) {
+        if (tokenLP == null) {
+            return null;
+        }
+        byte[] bytes = RocksDBService.get(baseArea + chainId, SwapDBUtil.stringToBytes(KEY_PREFIX_LP + tokenLP.str()));
+        if (bytes == null) {
+            return null;
+        }
+        return AddressTool.getStringAddressByBytes(bytes);
+    }
 }

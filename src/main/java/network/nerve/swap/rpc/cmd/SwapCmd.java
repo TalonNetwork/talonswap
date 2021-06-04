@@ -713,7 +713,7 @@ public class SwapCmd extends BaseCmd {
             @Parameter(parameterName = "pairAddress", parameterType = "String", parameterDes = "交易对地址")
     })
     @ResponseData(name = "返回值", description = "返回一个Map对象", responseType = @TypeDescriptor(value = Map.class, mapKeys = {
-            @Key(name = "value", valueType = SwapPairDTO.class, description = "交易对信息")
+            @Key(name = "value", valueType = StableSwapPairDTO.class, description = "交易对信息")
     }))
     public Response getStableSwapPairInfo(Map<String, Object> params) {
         try {
@@ -739,7 +739,7 @@ public class SwapCmd extends BaseCmd {
             @Parameter(parameterName = "txHash", parameterType = "String", parameterDes = "交易hash")
     })
     @ResponseData(name = "返回值", description = "返回一个Map对象", responseType = @TypeDescriptor(value = Map.class, mapKeys = {
-            @Key(name = "value", valueType = SwapPairDTO.class, description = "交易执行结果")
+            @Key(name = "value", valueType = SwapResult.class, description = "交易执行结果")
     }))
     public Response getSwapResultInfo(Map<String, Object> params) {
         try {
@@ -753,6 +753,27 @@ public class SwapCmd extends BaseCmd {
             Map<String, Object> resultData = new HashMap<>();
             resultData.put("value", result);
             return success(resultData);
+        } catch (Exception e) {
+            logger().error(e);
+            return failed(e.getMessage());
+        }
+    }
+
+    @CmdAnnotation(cmd = SWAP_PAIR_BY_LP, version = 1.0, description = "根据LP资产查询交易对地址")
+    @Parameters(value = {
+            @Parameter(parameterName = "chainId", parameterType = "int", parameterDes = "链id"),
+            @Parameter(parameterName = "tokenLPStr", parameterType = "String", parameterDes = "资产LP的类型，示例：1-1"),
+    })
+    @ResponseData(description = "交易对地址")
+    public Response getPairAddressByTokenLP(Map<String, Object> params) {
+        try {
+            Integer chainId = (Integer) params.get("chainId");
+            String tokenLPStr = (String) params.get("tokenLPStr");
+            Result<String> result = swapService.getPairAddressByTokenLP(chainId, tokenLPStr);
+            if (result.isFailed()) {
+                return wrapperFailed(result);
+            }
+            return success(result.getData());
         } catch (Exception e) {
             logger().error(e);
             return failed(e.getMessage());

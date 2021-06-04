@@ -3,7 +3,9 @@ package network.nerve.swap.cache.impl;
 import io.nuls.base.basic.AddressTool;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
+import io.nuls.core.model.StringUtils;
 import network.nerve.swap.cache.StableSwapPairCacher;
+import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.dto.stable.StableSwapPairDTO;
 import network.nerve.swap.model.po.stable.StableSwapPairBalancesPo;
 import network.nerve.swap.model.po.stable.StableSwapPairPo;
@@ -26,6 +28,7 @@ public class StableSwapPairCacherImpl implements StableSwapPairCacher {
 
     //不同的链地址不会相同，所以不再区分链
     private Map<String, StableSwapPairDTO> CACHE_MAP = new HashMap<>();
+    private Map<String, String> LP_CACHE_MAP = new HashMap<>();
 
     @Override
     public StableSwapPairDTO get(String address) {
@@ -63,5 +66,19 @@ public class StableSwapPairCacherImpl implements StableSwapPairCacher {
     @Override
     public boolean isExist(String pairAddress) {
         return this.get(pairAddress) != null;
+    }
+
+    @Override
+    public String getPairAddressByTokenLP(int chainId, NerveToken tokenLP) {
+        String tokenLPStr = tokenLP.str();
+        String pairAddress = LP_CACHE_MAP.get(tokenLPStr);
+        if (StringUtils.isBlank(pairAddress)) {
+            pairAddress = swapStablePairStorageService.getPairAddressByTokenLP(chainId, tokenLP);
+            if (StringUtils.isBlank(pairAddress)) {
+                return null;
+            }
+            LP_CACHE_MAP.put(tokenLPStr, pairAddress);
+        }
+        return pairAddress;
     }
 }

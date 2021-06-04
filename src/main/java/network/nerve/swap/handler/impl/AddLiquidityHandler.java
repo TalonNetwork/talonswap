@@ -123,7 +123,6 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
 
             // 整合计算数据
             AddLiquidityBus bus = new AddLiquidityBus(
-                    firstTokenA,
                     _realAddLiquidity[0], _realAddLiquidity[1],
                     orderDTO.getLiquidity(),
                     _reserves[0], _reserves[1],
@@ -142,7 +141,7 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
             // 组装系统成交交易
             NerveToken tokenLP = pair.getPair().getTokenLP();
             LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
-            Transaction sysDealTx = this.makeSystemDealTx(bus, dto, tx.getHash().toHex(), tokenA, tokenB, tokenLP, txData.getTo(), blockTime, tempBalanceManager);
+            Transaction sysDealTx = this.makeSystemDealTx(orderDTO, dto, tx.getHash().toHex(), tokenA, tokenB, tokenLP, txData.getTo(), blockTime, tempBalanceManager);
 
             result.setSubTx(sysDealTx);
             result.setSubTxStr(SwapUtils.nulsData2Hex(sysDealTx));
@@ -197,7 +196,7 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
         return result;
     }
 
-    private Transaction makeSystemDealTx(AddLiquidityBus bus, AddLiquidityDTO dto, String orginTxHash, NerveToken tokenA, NerveToken tokenB, NerveToken tokenLP, byte[] to, long blockTime, LedgerTempBalanceManager tempBalanceManager) {
+    private Transaction makeSystemDealTx(RealAddLiquidityOrderDTO bus, AddLiquidityDTO dto, String orginTxHash, NerveToken tokenA, NerveToken tokenB, NerveToken tokenLP, byte[] to, long blockTime, LedgerTempBalanceManager tempBalanceManager) {
         SwapSystemDealTransaction sysDeal = new SwapSystemDealTransaction(orginTxHash, blockTime);
         sysDeal.newTo()
                 .setToAddress(to)
@@ -205,25 +204,25 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
                 .setToAssetsId(tokenLP.getAssetId())
                 .setToAmount(bus.getLiquidity()).endTo();
 
-        if (bus.getRefundAmountA().compareTo(BigInteger.ZERO) > 0) {
+        if (bus.getRefundA().compareTo(BigInteger.ZERO) > 0) {
             LedgerBalance balanceA = tempBalanceManager.getBalance(dto.getPairAddress(), tokenA.getChainId(), tokenA.getAssetId()).getData();
             sysDeal.newFrom()
-                    .setFrom(balanceA, bus.getRefundAmountA()).endFrom();
+                    .setFrom(balanceA, bus.getRefundA()).endFrom();
             sysDeal.newTo()
                     .setToAddress(dto.getFromA())
                     .setToAssetsChainId(tokenA.getChainId())
                     .setToAssetsId(tokenA.getAssetId())
-                    .setToAmount(bus.getRefundAmountA()).endTo();
+                    .setToAmount(bus.getRefundA()).endTo();
         }
-        if (bus.getRefundAmountB().compareTo(BigInteger.ZERO) > 0) {
+        if (bus.getRefundB().compareTo(BigInteger.ZERO) > 0) {
             LedgerBalance balanceB = tempBalanceManager.getBalance(dto.getPairAddress(), tokenB.getChainId(), tokenB.getAssetId()).getData();
             sysDeal.newFrom()
-                    .setFrom(balanceB, bus.getRefundAmountB()).endFrom();
+                    .setFrom(balanceB, bus.getRefundB()).endFrom();
             sysDeal.newTo()
                     .setToAddress(dto.getFromB())
                     .setToAssetsChainId(tokenB.getChainId())
                     .setToAssetsId(tokenB.getAssetId())
-                    .setToAmount(bus.getRefundAmountB()).endTo();
+                    .setToAmount(bus.getRefundB()).endTo();
         }
         Transaction sysDealTx = sysDeal.build();
         return sysDealTx;

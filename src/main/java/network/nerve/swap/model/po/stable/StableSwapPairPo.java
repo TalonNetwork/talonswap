@@ -55,10 +55,14 @@ public class StableSwapPairPo {
         sb.append("\"address\":")
                 .append('\"').append(AddressTool.getStringAddressByBytes(address)).append('\"');
         sb.append(",\"tokenLP\":")
-                .append(tokenLP);
-        sb.append(",\"coins\":")
-                .append(Arrays.deepToString(coins));
-        sb.append('}');
+                .append(tokenLP.str());
+        sb.append(",\"coins\":[");
+        for (NerveToken coin : coins) {
+            sb.append('\"').append(coin.str()).append("\",");
+        }
+        sb.deleteCharAt(sb.length() - 1);
+        sb.append("]}");
         return sb.toString();
     }
+
 }
