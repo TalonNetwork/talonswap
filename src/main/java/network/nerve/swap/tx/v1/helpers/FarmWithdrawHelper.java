@@ -5,7 +5,7 @@ import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.logback.NulsLogger;
-import network.nerve.swap.cache.FarmCacher;
+import network.nerve.swap.cache.FarmCache;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.manager.FarmTempManager;
 import network.nerve.swap.model.Chain;
@@ -17,6 +17,8 @@ import network.nerve.swap.storage.FarmStorageService;
 import network.nerve.swap.storage.FarmUserInfoStorageService;
 import network.nerve.swap.utils.SwapUtils;
 
+import java.math.BigInteger;
+
 /**
  * @author Niels
  */
@@ -24,7 +26,7 @@ import network.nerve.swap.utils.SwapUtils;
 public class FarmWithdrawHelper {
 
     @Autowired
-    private FarmCacher farmCacher;
+    private FarmCache farmCache;
 
     @Autowired
     private FarmStorageService storageService;
@@ -47,7 +49,7 @@ public class FarmWithdrawHelper {
     public ValidaterResult validateTxData(Chain chain, Transaction tx, FarmStakeChangeData data, FarmTempManager farmTempManager, long blockTime) {
         NulsLogger logger = chain.getLogger();
         //验证farm是否存在
-        FarmPoolPO farm = farmCacher.get(data.getFarmHash());
+        FarmPoolPO farm = farmCache.get(data.getFarmHash());
         String farmHash = data.getFarmHash().toHex();
         if (farmTempManager != null && farmTempManager.getFarm(farmHash) != null) {
             farm = farmTempManager.getFarm(farmHash);
@@ -56,7 +58,10 @@ public class FarmWithdrawHelper {
             logger.warn("Farm不存在");
             return ValidaterResult.getFailed(SwapErrorCode.FARM_NOT_EXIST);
         }
-
+        if (data.getAmount().compareTo(BigInteger.ZERO) < 0) {
+            logger.warn("金额不正确");
+            return ValidaterResult.getFailed(SwapErrorCode.FARM_STAKE_AMOUNT_ERROR);
+        }
         byte[] userAddress;
         try {
             userAddress = SwapUtils.getSingleAddressFromTX(tx, chain.getChainId(), true);
@@ -79,8 +84,8 @@ public class FarmWithdrawHelper {
         return ValidaterResult.getSuccess();
     }
 
-    public void setFarmCacher(FarmCacher farmCacher) {
-        this.farmCacher = farmCacher;
+    public void setFarmCacher(FarmCache farmCache) {
+        this.farmCache = farmCache;
     }
 
     public void setStorageService(FarmStorageService storageService) {

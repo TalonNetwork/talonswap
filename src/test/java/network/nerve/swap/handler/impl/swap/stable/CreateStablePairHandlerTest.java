@@ -32,9 +32,9 @@ import io.nuls.core.rpc.model.ModuleE;
 import network.nerve.swap.JunitCase;
 import network.nerve.swap.JunitExecuter;
 import network.nerve.swap.JunitUtils;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.StableSwapPairCacher;
-import network.nerve.swap.cache.impl.StableSwapPairCacherImpl;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.StableSwapPairCache;
+import network.nerve.swap.cache.impl.StableSwapPairCacheImpl;
 import network.nerve.swap.config.ConfigBean;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.handler.ISwapHandler;
@@ -75,7 +75,7 @@ import static org.junit.Assert.assertNotNull;
 public class CreateStablePairHandlerTest {
 
     private CreateStablePairHandler handler;
-    private StableSwapPairCacher stableSwapPairCacher;
+    private StableSwapPairCache stableSwapPairCache;
     protected IPairFactory iPairFactory;
     private Chain chain;
     private NerveToken token0;
@@ -86,8 +86,8 @@ public class CreateStablePairHandlerTest {
     public void init() {
         handler = new CreateStablePairHandler();
         iPairFactory = new TemporaryPairFactory();
-        stableSwapPairCacher = new StableSwapPairCacherImpl();
-        SpringLiteContext.putBean(stableSwapPairCacher.getClass().getName(), stableSwapPairCacher);
+        stableSwapPairCache = new StableSwapPairCacheImpl();
+        SpringLiteContext.putBean(stableSwapPairCache.getClass().getName(), stableSwapPairCache);
         int chainId = 5;
         long blockHeight = 20L;
         token0 = new NerveToken(chainId, 1);
@@ -117,7 +117,7 @@ public class CreateStablePairHandlerTest {
         chainManager.getChainMap().put(chainId, chain);
 
         BeanUtilTest.setBean(handler, "chainManager", chainManager);
-        BeanUtilTest.setBean(handler, "ledgerAssetCacher", new LedgerAssetCacher() {
+        BeanUtilTest.setBean(handler, "ledgerAssetCache", new LedgerAssetCache() {
             @Override
             public LedgerAssetDTO getLedgerAsset(int chainId, int assetId) {
                 String key = chainId + "-" + assetId;
@@ -132,7 +132,7 @@ public class CreateStablePairHandlerTest {
                 return getLedgerAsset(token.getChainId(), token.getAssetId());
             }
         });
-        BeanUtilTest.setBean(stableSwapPairCacher, "swapStablePairStorageService", new SwapStablePairStorageService() {
+        BeanUtilTest.setBean(stableSwapPairCache, "swapStablePairStorageService", new SwapStablePairStorageService() {
 
             @Override
             public boolean savePair(byte[] address, StableSwapPairPo po) throws Exception {
@@ -149,6 +149,7 @@ public class CreateStablePairHandlerTest {
                 StableSwapPairPo po = new StableSwapPairPo(address);
                 po.setTokenLP(tokenLP);
                 po.setCoins(new NerveToken[]{token0, token1});
+                po.setDecimalsOfCoins(new int[]{6, 6});
                 return po;
             }
 
@@ -162,7 +163,7 @@ public class CreateStablePairHandlerTest {
                 return true;
             }
         });
-        BeanUtilTest.setBean(stableSwapPairCacher, "swapStablePairBalancesStorageService", new SwapStablePairBalancesStorageService() {
+        BeanUtilTest.setBean(stableSwapPairCache, "swapStablePairBalancesStorageService", new SwapStablePairBalancesStorageService() {
 
             @Override
             public boolean savePairBalances(String address, StableSwapPairBalancesPo dto) throws Exception {

@@ -21,38 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package network.nerve.swap.help.impl.stable;
+package network.nerve.swap.cache.impl;
 
-import network.nerve.swap.model.dto.stable.StableSwapPairDTO;
+import io.nuls.core.core.annotation.Component;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.model.NerveToken;
+import network.nerve.swap.model.dto.LedgerAssetDTO;
+import network.nerve.swap.rpc.call.LedgerCall;
 
-import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author: PierreLuo
- * @date: 2021/4/9
+ * @date: 2021/4/12
  */
-public class TemporaryStablePair extends AbstractStablePair {
+@Component
+public class LedgerAssetCacheImpl implements LedgerAssetCache {
 
-    private StableSwapPairDTO stableSwapPairDTO;
+    //不同的链地址不会相同，所以不再区分链
+    private Map<String, LedgerAssetDTO> CACHE_MAP = new HashMap<>();
 
-    public TemporaryStablePair(StableSwapPairDTO stableSwapPairDTO) {
-        this.stableSwapPairDTO = stableSwapPairDTO;
+    @Override
+    public LedgerAssetDTO getLedgerAsset(int chainId, int assetId) {
+        String key = chainId + "_" + assetId;
+        LedgerAssetDTO dto = CACHE_MAP.get(key);
+        if (dto == null) {
+            dto = LedgerCall.getNerveAsset(chainId, chainId, assetId);
+            if (dto == null) {
+                return null;
+            }
+            CACHE_MAP.put(key, dto);
+        }
+        return dto;
     }
 
     @Override
-    protected StableSwapPairDTO getStableSwapPairDTO() {
-        return stableSwapPairDTO;
-    }
-
-    @Override
-    public void _update(byte[] userAddress, BigInteger liquidityChange, BigInteger[] changeBalances, BigInteger[] newBalances, BigInteger[] balances, long blockHeight, long blockTime) {
-        stableSwapPairDTO.setTotalLP(stableSwapPairDTO.getTotalLP().add(liquidityChange));
-        stableSwapPairDTO.setBalances(newBalances);
-    }
-
-    @Override
-    public void _rollback(byte[] userAddress, BigInteger liquidityChange, BigInteger[] changeBalances, BigInteger[] newBalances, BigInteger[] balances, long blockHeight, long blockTime) {
-        stableSwapPairDTO.setTotalLP(stableSwapPairDTO.getTotalLP().subtract(liquidityChange));
-        stableSwapPairDTO.setBalances(balances);
+    public LedgerAssetDTO getLedgerAsset(NerveToken token) {
+        if (token == null) {
+            return null;
+        }
+        return getLedgerAsset(token.getChainId(), token.getAssetId());
     }
 }

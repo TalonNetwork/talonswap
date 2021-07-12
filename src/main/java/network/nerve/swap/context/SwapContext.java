@@ -39,6 +39,10 @@ public class SwapContext {
 
     public static long LATEST_BLOCK_HEIGHT = 0L;
     /**
+     * 模块协议生效高度
+     */
+    public static long PROTOCOL_UPGRADE_HEIGHT = 0L;
+    /**
      * 黑洞公钥
      */
     public static byte[] BLACKHOLE_PUBKEY;
@@ -46,17 +50,13 @@ public class SwapContext {
     public static NulsLogger logger;
     
     /**
-     * 手续费分配给`非`流动性提供者的百分比例（分配给系统地址和交易中指定的接收地址，剩余部分，则分配给流动性提供者）
-     */
-    public static BigInteger FEE_PERCENT_ALLOCATION_UN_LIQUIDIDY = BI_50;
-    /**
-     * 系统接收地址-获得的手续费百分比例（剩余部分，则分配给交易组装者指定接收地址）
-     */
-    public static BigInteger FEE_PERCENT_SYSTEM_RECEIVE = BI_50;
-    /**
      * 手续费奖励的系统接收地址
      */
     public static byte[] AWARD_FEE_SYSTEM_ADDRESS;
+    /**
+     * 手续费奖励的销毁地址
+     */
+    public static byte[] AWARD_FEE_DESTRUCTION_ADDRESS;
 
     /**
      * （恒定币交易）手续费收取的千分比例

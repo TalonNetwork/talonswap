@@ -81,15 +81,15 @@ public class SwapPairDTO {
         sb.append("\"po\":")
                 .append(po.toString());
         sb.append(",\"reserve0\":")
-                .append(reserve0);
+                .append('\"').append(reserve0).append('\"');
         sb.append(",\"reserve1\":")
-                .append(reserve1);
+                .append('\"').append(reserve1).append('\"');
         sb.append(",\"totalLP\":")
-                .append(totalLP);
+                .append('\"').append(totalLP).append('\"');
         sb.append(",\"blockTimeLast\":")
-                .append(blockTimeLast);
+                .append('\"').append(blockTimeLast).append('\"');
         sb.append(",\"blockHeightLast\":")
-                .append(blockHeightLast);
+                .append('\"').append(blockHeightLast).append('\"');
         sb.append('}');
         return sb.toString();
     }

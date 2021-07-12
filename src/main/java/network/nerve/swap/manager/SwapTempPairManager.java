@@ -25,7 +25,7 @@
 package network.nerve.swap.manager;
 
 import io.nuls.core.core.ioc.SpringLiteContext;
-import network.nerve.swap.cache.SwapPairCacher;
+import network.nerve.swap.cache.SwapPairCache;
 import network.nerve.swap.model.dto.SwapPairDTO;
 
 import java.util.HashMap;
@@ -44,11 +44,11 @@ public class SwapTempPairManager {
      * 用于校验
      */
     private Set<String> tempCreatePairs = new HashSet<>();
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
     private Map<String, SwapPairDTO> pairs = new HashMap<>();
 
     private SwapTempPairManager() {
-        this.swapPairCacher = SpringLiteContext.getBean(SwapPairCacher.class);
+        this.swapPairCache = SpringLiteContext.getBean(SwapPairCache.class);
     }
 
     public static SwapTempPairManager newInstance(int chainId) {
@@ -60,7 +60,7 @@ public class SwapTempPairManager {
     public SwapPairDTO get(String address) {
         SwapPairDTO swapPairDTO = pairs.get(address);
         if (swapPairDTO == null) {
-            swapPairDTO = swapPairCacher.get(address);
+            swapPairDTO = swapPairCache.get(address);
             if (swapPairDTO == null) {
                 return null;
             }
@@ -71,7 +71,7 @@ public class SwapTempPairManager {
     }
 
     public boolean isExist(String address) {
-        return swapPairCacher.isExist(address) || tempCreatePairs.contains(address);
+        return swapPairCache.isExist(address) || tempCreatePairs.contains(address);
     }
 
     public void add(String address) {

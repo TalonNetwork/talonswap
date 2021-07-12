@@ -38,13 +38,17 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static network.nerve.swap.constant.SwapCmdConstant.*;
 
 public class SwapTxSendTest {
-    static String awardFeeSystemAddressPublicKey = "031672b023ef35e37eb1d570015b54e1c29a6cc57d5a11c4733e960efe7ca56b80";
+    static String awardFeeSystemAddressPublicKey = "d60fc83130dbe5537d4f1e1e35c533f1a396b8b7d641d717b2d1eb1245d0d796";
     static String awardFeeSystemAddress;
     static String address20 = "TNVTdTSPVcqUCdfVYWwrbuRtZ1oM6GpSgsgF5";
     static String address21 = "TNVTdTSPNEpLq2wnbsBcD8UDTVMsArtkfxWgz";
@@ -78,38 +82,6 @@ public class SwapTxSendTest {
     static String address49 = "TNVTdTSPF1mBVywX7BR674SZbaHBn3JoPhyJi";
     static String address50 = "TNVTdTSPHR7jCTZwtEB6FS1BZuBe7RVjshEsB";
     static String address51 = "TNVTdTSPRrYndMR8JZ4wJovLDbRp2o4gGWDAp";
-    private String privateKey20 = "9ce21dad67e0f0af2599b41b515a7f7018059418bab892a7b68f283d489abc4b";
-    private String privateKey21 = "477059f40708313626cccd26f276646e4466032cabceccbf571a7c46f954eb75";
-    private String privateKey22 = "8212e7ba23c8b52790c45b0514490356cd819db15d364cbe08659b5888339e78";
-    private String privateKey23 = "4100e2f88c3dba08e5000ed3e8da1ae4f1e0041b856c09d35a26fb399550f530";
-    private String privateKey24 = "bec819ef7d5beeb1593790254583e077e00f481982bce1a43ea2830a2dc4fdf7";
-    private String privateKey25 = "ddddb7cb859a467fbe05d5034735de9e62ad06db6557b64d7c139b6db856b200";
-    private String privateKey26 = "4efb6c23991f56626bc77cdb341d64e891e0412b03cbcb948aba6d4defb4e60a";
-    private String privateKey27 = "3dadac00b523736f38f8c57deb81aa7ec612b68448995856038bd26addd80ec1";
-    private String privateKey28 = "27dbdcd1f2d6166001e5a722afbbb86a845ef590433ab4fcd13b9a433af6e66e";
-    private String privateKey29 = "76b7beaa98db863fb680def099af872978209ed9422b7acab8ab57ad95ab218b";
-    private String privateKey30 = "B36097415F57FE0AC1665858E3D007BA066A7C022EC712928D2372B27E8513FF";
-    private String privateKey31 = "4594348E3482B751AA235B8E580EFEF69DB465B3A291C5662CEDA6459ED12E39";
-    private String privateKey32 = "e70ea2ebe146d900bf84bc7a96a02f4802546869da44a23c29f599c7e42001da";
-    private String privateKey33 = "4c6b4c5d9b07e364d6b306d1afe0f2c37e15c64ac5151a395a4c570f00ce867d";
-    private String privateKey34 = "2fea28f438a104062e4dcd79427282573053a6b762e68b942055221462c46f02";
-    private String privateKey35 = "08407198c196c950afffd326a00321a5ea563b3beaf640d462f3a274319b753d";
-    private String privateKey36 = "be9dd9fb419ede7188b45451445525669d5e9d256bd3f938ecae177194867aa1";
-    private String privateKey37 = "9769cdc13af8da759ba985156876072986e9e10deb5fe41fe8406567071b0a71";
-    private String privateKey38 = "9887b7e02b098a421b406223c3ec5b92889d294f4ed84a0d53018dced35cff41";
-    private String privateKey39 = "7ec6ae2f4da0b80c0120ea96e8ce8973623ccaed36f5c2145032ac453dc006f0";
-    private String privateKey40 = "bd08d1cd9a1f319a0c0439b29029f7e46584c56126fd30f02c0b6fb5fb8e4144";
-    private String privateKey41 = "48348fff812b049024efcd2b3481ada1cfdeb3deabb56e4ba9d84c2ebb3a8a1f";
-    private String privateKey42 = "f13495414167ffc3254ef93a0fc47102f721a556d1fb595f5cc130021cbcc67a";
-    private String privateKey43 = "2c30389340122e20b9462a418979dcced200549c4aa7e42f189425ecedb18b2a";
-    private String privateKey44 = "19397598342ea2adf2162c0dc9a00381bdaa28a3a481ba9f6fa70afa3040625d";
-    private String privateKey45 = "8e81aab76c78c07d3304d0c03e7790423b3e28b9851756d0b1ac962ac1acb504";
-    private String privateKey46 = "9d1f84b2b3c1f53498abb436d87a32af793978d22bc76fc2b6fa1971b117ff63";
-    private String privateKey47 = "0bd10e2fe13ca8d6d91b43e0518d5ad06adaad9a78520a39d8db00ed62d45dd4";
-    private String privateKey48 = "01f72a7d50655939b60c4f79ea6dd2661b435d49ce81467d91f5b85f4a26c112";
-    private String privateKey49 = "c0102d3f66edf0fd8939fb149bbe5a5f6503e8a7bf41b80b8b5a0312c6ced3a7";
-    private String privateKey50 = "d92a08dafcec90ba2e08cc825c6f74c41058b9bc325f61ffa1fddaf27a358f3b";
-    private String privateKey51 = "efc10e6831a87ba71dad9c3769b07875a0eb9b8ced5139125f05a58d0f0c599f";
 
     static String agentAddress;
     static String packageAddress;
@@ -135,43 +107,51 @@ public class SwapTxSendTest {
     static String version = "1.0";
     static String password = "nuls123456";//"nuls123456";
 
-    int ethAssetId = 11;
-    int bscAssetId = 10;
-    int htAssetId = 8;
-    int oktAssetId = 6;
-    int swapLpAssetId = 0;
-    int stableLpAssetId = 14;
+    static String OKUSD_OKT_8 = "0x10B382863647C4610050A69fBc1E582aC29fE58A";
+    static String HUSD_HT_18 = "0x10B382863647C4610050A69fBc1E582aC29fE58A";
+    static String BUSD_BNB_18 = "0x02e1aFEeF2a25eAbD0362C4Ba2DC6d20cA638151";
+    static String USDX_ETH = "0xB058887cb5990509a3D0DD2833B2054E4a7E4a55";
+    static String USDX_BNB = "0xb6D685346106B697E6b2BbA09bc343caFC930cA3";
+    static String USDX_HT = "0x03Cf96223BD413eb7777AFE3cdb689e7E851CB32";
+    static String USDX_OKT = "0x74A163fCd791Ec7AaB2204ffAbf1A1DFb8854883";
+
+    static String DXA_BNB_8 = "0x3139dbe1bf7feb917cf8e978b72b6ead764b0e6c";
+    static String GOAT_BNB_9 = "0xba0147e9c99b0467efe7a9c51a2db140f1881db5";
+    static String SAFEMOON_BNB_9 = "0x7be69eb38443d3a632cb972df840013d667365e6";
+
+    //int ethAssetId = 0;
+    //int bscAssetId = 0;
+    //int htAssetId = 0;
+    //int oktAssetId = 0;
+    //int swapLpAssetId_nvt8usdx_eth;
+    //int swapLpAssetId_nvt8usdx_bnb;
+    //int swapLpAssetId_dxa8usdx_bnb;
+    //int swapLpAssetId_goat9usdx_bnb;
+    //int swapLpAssetId_nvt8safemoon9;
+    //int swapLpAssetId_goat9safemoon9;
+    int stableLpAssetId = 19;
     protected NerveToken nvt = new NerveToken(chainId, 1);
-    protected NerveToken usdx_eth = new NerveToken(chainId, ethAssetId);
-    protected NerveToken usdx_bnb = new NerveToken(chainId, bscAssetId);
-    protected NerveToken usdx_ht = new NerveToken(chainId, htAssetId);
-    protected NerveToken usdx_okt = new NerveToken(chainId, oktAssetId);
+    protected NerveToken usdx_eth;
+    protected NerveToken usdx_bnb;
+    protected NerveToken usdx_ht;
+    protected NerveToken usdx_okt;
 
-    protected NerveToken usdi_eth = new NerveToken(chainId, 11);
-    protected NerveToken goat_ht = new NerveToken(chainId, 8);
-    protected NerveToken usdt_okt = new NerveToken(chainId, 6);
+    protected NerveToken dxa8_bnb;
+    protected NerveToken goat9_bnb;
+    protected NerveToken safemoon9_bnb;
 
-    protected NerveToken swap_lp = new NerveToken(chainId, swapLpAssetId);
+    protected NerveToken busd_18;
+    protected NerveToken husd_18;
+    protected NerveToken okusd_8;
+
+    protected NerveToken swap_lp_nvt8usdx_eth;
+    protected NerveToken swap_lp_nvt8usdx_bnb;
+    protected NerveToken swap_lp_dxa8usdx_bnb;
+    protected NerveToken swap_lp_goat9usdx_bnb;
+    protected NerveToken swap_lp_nvt8safemoon9;
+    protected NerveToken swap_lp_goat9safemoon9;
     protected NerveToken stable_swap_lp = new NerveToken(chainId, stableLpAssetId);
-
-    public static void importPriKey(String priKey, String pwd) {
-        try {
-            //账户已存在则覆盖 If the account exists, it covers.
-            Map<String, Object> params = new HashMap<>();
-            params.put(Constants.VERSION_KEY_STR, "1.0");
-            params.put(Constants.CHAIN_ID, chainId);
-
-            params.put("priKey", priKey);
-            params.put("password", pwd);
-            params.put("overwrite", true);
-            Response cmdResp = ResponseMessageProcessor.requestAndResponse(ModuleE.AC.abbr, "ac_importAccountByPriKey", params);
-            HashMap result = (HashMap) ((HashMap) cmdResp.getResponseData()).get("ac_importAccountByPriKey");
-            String address = (String) result.get("address");
-            Log.debug("importPriKey success! address-{}", address);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    protected String stablePairAddress = "TNVTdTSQkzYwoXSqZELMxNmy4hW1iGJbpbBnw";
 
     @BeforeClass
     public static void beforeClass() {
@@ -190,107 +170,76 @@ public class SwapTxSendTest {
         chain.setConfig(new ConfigBean(chainId, assetId, "UTF-8"));
         from = address31;
         awardFeeSystemAddress = AddressTool.getStringAddressByBytes(AddressTool.getAddressByPubKeyStr(awardFeeSystemAddressPublicKey, chainId));
-        // 设置共识节点地址和出块地址
-        packageZP();
+
+        usdx_eth = this.findAssetIdByAddress(101, USDX_ETH);
+        usdx_bnb = this.findAssetIdByAddress(102, USDX_BNB);
+        usdx_ht = this.findAssetIdByAddress(103, USDX_HT);
+        usdx_okt = this.findAssetIdByAddress(104, USDX_OKT);
+        goat9_bnb = this.findAssetIdByAddress(102, GOAT_BNB_9);
+        dxa8_bnb = this.findAssetIdByAddress(102, DXA_BNB_8);
+        safemoon9_bnb = this.findAssetIdByAddress(102, SAFEMOON_BNB_9);
+        busd_18 = this.findAssetIdByAddress(102, BUSD_BNB_18);
+        husd_18 = this.findAssetIdByAddress(103, HUSD_HT_18);
+        okusd_8 = this.findAssetIdByAddress(104, OKUSD_OKT_8);
+        swap_lp_nvt8usdx_eth = this.getPairLPToken(nvt.str(), usdx_eth.str());
+        swap_lp_nvt8usdx_bnb = this.getPairLPToken(nvt.str(), usdx_bnb.str());
+        swap_lp_dxa8usdx_bnb = this.getPairLPToken(dxa8_bnb.str(), usdx_bnb.str());
+        swap_lp_goat9usdx_bnb = this.getPairLPToken(goat9_bnb.str(), usdx_bnb.str());
+        swap_lp_nvt8safemoon9 = this.getPairLPToken(nvt.str(), safemoon9_bnb.str());
+        swap_lp_goat9safemoon9 = this.getPairLPToken(goat9_bnb.str(), safemoon9_bnb.str());
     }
 
-    // 0x09534d4692F568BC6e9bef3b4D84d48f19E52501 [Account3]
-    // 0xF3c90eF58eC31805af11CE5FA6d39E395c66441f [Account4]
-    // 0x6afb1F9Ca069bC004DCF06C51B42992DBD90Adba [Account5]
-    // 私钥: 43DA7C269917207A3CBB564B692CD57E9C72F9FCFDB17EF2190DD15546C4ED9D / 0x8F05AE1C759b8dB56ff8124A89bb1305ECe17B65 [Account 6] / tNULSeBaMfmpwBtUSHyLCGHq4WqYY5A4Dxak91
-    // 私钥: 0935E3D8C87C2EA5C90E3E3A0509D06EB8496655DB63745FAE4FF01EB2467E85 / 0xd29E172537A3FB133f790EBE57aCe8221CB8024F [Account 7] / tNULSeBaMjqtMNhWWyUKZUsGhWaRd88RMrSU6J
-    // 私钥: CCF560337BA3DE2A76C1D08825212073B299B115474B65DE4B38B587605FF7F2 / 0x54eAB3868B0090E6e1a1396E0e54F788a71B2b17 [Account 8] / tNULSeBaMrmiuHZg9c2JVAbLQydAxjNvuKRgFj
-    @Test
-    public void importPriKeyTest() {
-        // HF: 0x16534991E80117Ca16c724C991aad9EAbd1D7ebe
-        //公钥: 037fae74d15153c3b55857ca0abd5c34c865dfa1c0d0232997c545bae5541a0863
-        //importPriKey("b54db432bba7e13a6c4a28f65b925b18e63bcb79143f7b894fa735d5d3d09db5", password);//种子出块地址 tNULSeBaMkrt4z9FYEkkR9D6choPVvQr94oYZp, 0xdd7CBEdDe731e78e8b8E4b2c212bC42fA7C09D03
-        //公钥: 036c0c9ae792f043e14d6a3160fa37e9ce8ee3891c34f18559e20d9cb45a877c4b
-        //importPriKey("188b255c5a6d58d1eed6f57272a22420447c3d922d5765ebb547bc6624787d9f", password);//种子出块地址 tNULSeBaMoGr2RkLZPfJeS5dFzZeNj1oXmaYNe, 0xD16634629C638EFd8eD90bB096C216e7aEc01A91
-        importPriKey("9ce21dad67e0f0af2599b41b515a7f7018059418bab892a7b68f283d489abc4b", password);//20 tNULSeBaMvEtDfvZuukDf2mVyfGo3DdiN8KLRG
-        importPriKey("477059f40708313626cccd26f276646e4466032cabceccbf571a7c46f954eb75", password);//21 tNULSeBaMnrs6JKrCy6TQdzYJZkMZJDng7QAsD
-        importPriKey("8212e7ba23c8b52790c45b0514490356cd819db15d364cbe08659b5888339e78", password);//22 tNULSeBaMrbMRiFAUeeAt6swb4xVBNyi81YL24
-        importPriKey("4100e2f88c3dba08e5000ed3e8da1ae4f1e0041b856c09d35a26fb399550f530", password);//23 tNULSeBaMu38g1vnJsSZUCwTDU9GsE5TVNUtpD
-        importPriKey("bec819ef7d5beeb1593790254583e077e00f481982bce1a43ea2830a2dc4fdf7", password);//24 tNULSeBaMp9wC9PcWEcfesY7YmWrPfeQzkN1xL
-        importPriKey("ddddb7cb859a467fbe05d5034735de9e62ad06db6557b64d7c139b6db856b200", password);//25 tNULSeBaMshNPEnuqiDhMdSA4iNs6LMgjY6tcL
-        importPriKey("4efb6c23991f56626bc77cdb341d64e891e0412b03cbcb948aba6d4defb4e60a", password);//26 tNULSeBaMoodYW7AqyJrgYdWiJ6nfwfVHHHyXm
-        importPriKey("3dadac00b523736f38f8c57deb81aa7ec612b68448995856038bd26addd80ec1", password);//27 tNULSeBaMmTNYqywL5ZSHbyAQ662uE3wibrgD1
-        importPriKey("27dbdcd1f2d6166001e5a722afbbb86a845ef590433ab4fcd13b9a433af6e66e", password);//28 tNULSeBaMoNnKitV28JeuUdBaPSR6n1xHfKLj2
-        importPriKey("76b7beaa98db863fb680def099af872978209ed9422b7acab8ab57ad95ab218b", password);//29 tNULSeBaMqywZjfSrKNQKBfuQtVxAHBQ8rB2Zn
-        importPriKey("B36097415F57FE0AC1665858E3D007BA066A7C022EC712928D2372B27E8513FF", password);//30 ETH 测试网地址 tNULSeBaMfQ6VnRxrCwdU6aPqdiPii9Ks8ofUQ
-        importPriKey("4594348E3482B751AA235B8E580EFEF69DB465B3A291C5662CEDA6459ED12E39", password);//31 测试网地址 tNULSeBaMrQaVh1V7LLvbKa5QSN54bS4sdbXaF, 0xc11D9943805e56b630A401D4bd9A29550353EFa1 [Account 9]
-        importPriKey(packageAddressPrivateKey, password);
-        //=================================================================//
-        importPriKey("e70ea2ebe146d900bf84bc7a96a02f4802546869da44a23c29f599c7e42001da", password);//32 TNVTdTSPQj7T5LiVmL974o2YRWa1YPJJzJHhn
-        importPriKey("4c6b4c5d9b07e364d6b306d1afe0f2c37e15c64ac5151a395a4c570f00ce867d", password);//33 TNVTdTSPKy4iLwK6XC52VNqVSnk1vncF5Z2mu
-        importPriKey("2fea28f438a104062e4dcd79427282573053a6b762e68b942055221462c46f02", password);//34 TNVTdTSPRgkZKoNaeAUj6H3UWH29D5ftv7LNN
-        importPriKey("08407198c196c950afffd326a00321a5ea563b3beaf640d462f3a274319b753d", password);//35 TNVTdTSPVhoYssF5cgMVGWRYsdai9KLs9rotk
-        importPriKey("be9dd9fb419ede7188b45451445525669d5e9d256bd3f938ecae177194867aa1", password);//36 TNVTdTSPN9pNrMMEmhZsNYVn9Lcyu3cxSUbAL
-        importPriKey("9769cdc13af8da759ba985156876072986e9e10deb5fe41fe8406567071b0a71", password);//37 TNVTdTSPLnyxJ4gWi3L4mr6sSQrcfqLqPbCkP
-        importPriKey("9887b7e02b098a421b406223c3ec5b92889d294f4ed84a0d53018dced35cff41", password);//38 TNVTdTSPJiFqnqW2sGNVZ1do2C6tFoLv7DBgE
-        importPriKey("7ec6ae2f4da0b80c0120ea96e8ce8973623ccaed36f5c2145032ac453dc006f0", password);//39 TNVTdTSPTgPV9AjgQKFvdT1eviWisVMG7Naah
-        importPriKey("bd08d1cd9a1f319a0c0439b29029f7e46584c56126fd30f02c0b6fb5fb8e4144", password);//40 TNVTdTSPGvLeBDxQiWRH3jZTcrYKwSF2axCfy
-        importPriKey("48348fff812b049024efcd2b3481ada1cfdeb3deabb56e4ba9d84c2ebb3a8a1f", password);//41 TNVTdTSPPyoYQNDgfbF83P3kWJz9bvrNej1RW
-        importPriKey("f13495414167ffc3254ef93a0fc47102f721a556d1fb595f5cc130021cbcc67a", password);//42 TNVTdTSPTNWUw7YiRLuwpFiPiUcpYQbzRU8LT
-        importPriKey("2c30389340122e20b9462a418979dcced200549c4aa7e42f189425ecedb18b2a", password);//43 TNVTdTSPSxopb3jVAdDEhx49S6iaA2CiPa3oa
-        importPriKey("19397598342ea2adf2162c0dc9a00381bdaa28a3a481ba9f6fa70afa3040625d", password);//44 TNVTdTSPNc8YhE5h7Msd8R9Vebd5DG9W38Hd6
-        importPriKey("8e81aab76c78c07d3304d0c03e7790423b3e28b9851756d0b1ac962ac1acb504", password);//45 TNVTdTSPPDMJA6eFRAb47vC2Lzx662nj3VVhg
-        importPriKey("9d1f84b2b3c1f53498abb436d87a32af793978d22bc76fc2b6fa1971b117ff63", password);//46 TNVTdTSPMXhkD6FJ9htA9H3aDEVVg8DNoriur
-        importPriKey("0bd10e2fe13ca8d6d91b43e0518d5ad06adaad9a78520a39d8db00ed62d45dd4", password);//47 TNVTdTSPPENjnLifQrJ4EK6tWp1HaDhnW5h7y
-        importPriKey("01f72a7d50655939b60c4f79ea6dd2661b435d49ce81467d91f5b85f4a26c112", password);//48 TNVTdTSPLmeuz7aVsdb2WTcGXKFmcKowTfk46
-        importPriKey("c0102d3f66edf0fd8939fb149bbe5a5f6503e8a7bf41b80b8b5a0312c6ced3a7", password);//49 TNVTdTSPF1mBVywX7BR674SZbaHBn3JoPhyJi
-        importPriKey("d92a08dafcec90ba2e08cc825c6f74c41058b9bc325f61ffa1fddaf27a358f3b", password);//50 TNVTdTSPHR7jCTZwtEB6FS1BZuBe7RVjshEsB
-        importPriKey("efc10e6831a87ba71dad9c3769b07875a0eb9b8ced5139125f05a58d0f0c599f", password);//51 TNVTdTSPRrYndMR8JZ4wJovLDbRp2o4gGWDAp
-
-        //importPriKey("a0282c3f197bae3345938595aba2296affae60fbafa7e2723910248466718858", password);//
+    private NerveToken findAssetIdByAddress(int heterogeneousChainId, String contractAddress) throws Exception {
+        return this.findAssetIdByAddress(heterogeneousChainId, contractAddress, false);
     }
 
-    @Test
-    public void transfer() throws Exception {
-        Map transferMap = new HashMap();
-        transferMap.put("chainId", chainId);
-        transferMap.put("remark", "abc");
-        List<CoinDTO> inputs = new ArrayList<>();
-        List<CoinDTO> outputs = new ArrayList<>();
-
-        outputs.add(new CoinDTO(address22, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address23, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address24, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address25, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address26, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address27, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address28, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address29, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address30, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address31, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-
-        outputs.add(new CoinDTO(address32, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address33, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address34, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address35, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address36, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address37, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address38, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address39, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address40, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(address41, chainId, 1, BigInteger.valueOf(1510000_0000_0000L), password, 0));
-
-        outputs.add(new CoinDTO(packageAddressZP, chainId, 1, BigInteger.valueOf(10000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(packageAddressNE, chainId, 1, BigInteger.valueOf(10000_0000_0000L), password, 0));
-        outputs.add(new CoinDTO(packageAddressHF, chainId, 1, BigInteger.valueOf(10000_0000_0000L), password, 0));
-
-        BigInteger inAmount = BigInteger.valueOf(10_0000L);
-        for (CoinDTO dto : outputs) {
-            inAmount = inAmount.add(dto.getAmount());
+    private NerveToken findAssetIdByAddress(int heterogeneousChainId, String contractAddress, boolean debug) throws Exception {
+        Map<String, Object> params = new HashMap<>();
+        params.put(Constants.VERSION_KEY_STR, "1.0");
+        params.put("heterogeneousChainId", heterogeneousChainId);
+        params.put("contractAddress", contractAddress);
+        Response cmdResp = ResponseMessageProcessor.requestAndResponse(ModuleE.CV.abbr, "cv_get_heterogeneous_chain_asset_info_by_address", params);
+        Map responseData = (Map) cmdResp.getResponseData();
+        Map result = (Map) responseData.get("cv_get_heterogeneous_chain_asset_info_by_address");
+        if (result == null) {
+            return new NerveToken();
         }
-        inputs.add(new CoinDTO(address21, chainId, 1, inAmount, password, 0));
+        Integer chainId = (Integer) result.get("chainId");
+        Integer assetId = (Integer) result.get("assetId");
+        if (debug) {
+            System.out.println(JSONUtils.obj2PrettyJson(cmdResp));
+        }
+        return new NerveToken(chainId, assetId);
+    }
 
-        transferMap.put("inputs", inputs);
-        transferMap.put("outputs", outputs);
+    private void create0(Map<String, Object> params) {
+        params.put("tokenAStr", usdx_bnb.str());
+        params.put("tokenBStr", nvt.str());
+    }
 
-        //调用接口
-        Response cmdResp = ResponseMessageProcessor.requestAndResponse(ModuleE.AC.abbr, "ac_transfer", transferMap);
-        System.out.println(JSONUtils.obj2PrettyJson(cmdResp));
+    private void create1(Map<String, Object> params) {
+        params.put("tokenAStr", usdx_eth.str());
+        params.put("tokenBStr", nvt.str());
+    }
+
+    private void create2(Map<String, Object> params) {
+        params.put("tokenAStr", usdx_bnb.str());
+        params.put("tokenBStr", dxa8_bnb.str());
+    }
+
+    private void create3(Map<String, Object> params) {
+        params.put("tokenAStr", usdx_bnb.str());
+        params.put("tokenBStr", goat9_bnb.str());
+    }
+
+    private void create4(Map<String, Object> params) {
+        params.put("tokenAStr", safemoon9_bnb.str());
+        params.put("tokenBStr", nvt.str());
+    }
+
+    private void create5(Map<String, Object> params) {
+        params.put("tokenAStr", safemoon9_bnb.str());
+        params.put("tokenBStr", goat9_bnb.str());
     }
 
     @Parameters(value = {
@@ -303,9 +252,80 @@ public class SwapTxSendTest {
     @Test
     public void swapCreatePair() throws Exception {
         Map<String, Object> params = new HashMap<>();
+        //this.create0(params);
+        this.create1(params);
+        //this.create2(params);
+        //this.create3(params);
+        //this.create4(params);
+        //this.create5(params);
+
+        this.sendTx(from, SWAP_CREATE_PAIR, params);
+    }
+
+    private void addLiquidityNvt8usdx_bnb(Map<String, Object> params) {
+        String amountA = "10000";
+        String amountB = "535";
+        amountA = new BigDecimal(amountA).scaleByPowerOfTen(8).toPlainString();
+        amountB = new BigDecimal(amountB).scaleByPowerOfTen(6).toPlainString();
         params.put("tokenAStr", nvt.str());
         params.put("tokenBStr", usdx_bnb.str());
-        this.sendTx(from, SWAP_CREATE_PAIR, params);
+        params.put("amountA", amountA);
+        params.put("amountB", amountB);
+    }
+
+    private void addLiquidityNvt8usdx_eth(Map<String, Object> params) {
+        String amountA = "10000";
+        String amountB = "535";
+        amountA = new BigDecimal(amountA).scaleByPowerOfTen(8).toPlainString();
+        amountB = new BigDecimal(amountB).scaleByPowerOfTen(6).toPlainString();
+        params.put("tokenAStr", nvt.str());
+        params.put("tokenBStr", usdx_eth.str());
+        params.put("amountA", amountA);
+        params.put("amountB", amountB);
+    }
+
+    private void addLiquidityDxa8usdx_bnb(Map<String, Object> params) {
+        String amountA = "150";
+        String amountB = "100";
+        amountA = new BigDecimal(amountA).scaleByPowerOfTen(8).toPlainString();
+        amountB = new BigDecimal(amountB).scaleByPowerOfTen(6).toPlainString();
+        params.put("tokenAStr", dxa8_bnb.str());
+        params.put("tokenBStr", usdx_bnb.str());
+        params.put("amountA", amountA);
+        params.put("amountB", amountB);
+    }
+
+    private void addLiquidityGoat9usdx_bnb(Map<String, Object> params) {
+        String amountA = "3000";
+        String amountB = "100";
+        amountA = new BigDecimal(amountA).scaleByPowerOfTen(9).toPlainString();
+        amountB = new BigDecimal(amountB).scaleByPowerOfTen(6).toPlainString();
+        params.put("tokenAStr", goat9_bnb.str());
+        params.put("tokenBStr", usdx_bnb.str());
+        params.put("amountA", amountA);
+        params.put("amountB", amountB);
+    }
+
+    private void addLiquidityNvt8safemoon9(Map<String, Object> params) {
+        String amountA = "100";
+        String amountB = "2000";
+        amountA = new BigDecimal(amountA).scaleByPowerOfTen(8).toPlainString();
+        amountB = new BigDecimal(amountB).scaleByPowerOfTen(9).toPlainString();
+        params.put("tokenAStr", nvt.str());
+        params.put("tokenBStr", safemoon9_bnb.str());
+        params.put("amountA", amountA);
+        params.put("amountB", amountB);
+    }
+
+    private void addLiquidityGoat9safemoon9(Map<String, Object> params) {
+        String amountA = "300";
+        String amountB = "2800";
+        amountA = new BigDecimal(amountA).scaleByPowerOfTen(9).toPlainString();
+        amountB = new BigDecimal(amountB).scaleByPowerOfTen(9).toPlainString();
+        params.put("tokenAStr", goat9_bnb.str());
+        params.put("tokenBStr", safemoon9_bnb.str());
+        params.put("amountA", amountA);
+        params.put("amountB", amountB);
     }
 
     @Parameters(value = {
@@ -324,10 +344,12 @@ public class SwapTxSendTest {
     @Test
     public void swapAddLiquidity() throws Exception {
         Map<String, Object> params = new HashMap<>();
-        params.put("amountA", "20000");
-        params.put("amountB", "600");
-        params.put("tokenAStr", nvt.str());
-        params.put("tokenBStr", usdx_bnb.str());
+        //this.addLiquidityNvt8usdx_bnb(params);
+        this.addLiquidityNvt8usdx_eth(params);
+        //this.addLiquidityDxa8usdx_bnb(params);
+        //this.addLiquidityGoat9usdx_bnb(params);
+        //this.addLiquidityNvt8safemoon9(params);
+        //this.addLiquidityGoat9safemoon9(params);
         BigInteger[] minAmounts = this.calMinAmountOnSwapAddLiquidity(params);
         params.put("amountAMin", minAmounts[0].toString());
         params.put("amountBMin", minAmounts[1].toString());
@@ -352,16 +374,16 @@ public class SwapTxSendTest {
     @Test
     public void swapRemoveLiquidity() throws Exception {
         Map<String, Object> params = new HashMap<>();
-        params.put("amountLP", "1000");
-        params.put("tokenLPStr", "5-12");
+        params.put("amountLP", "23130066012");
+        params.put("tokenLPStr", "5-20");
         params.put("tokenAStr", nvt.str());
-        params.put("tokenBStr", usdx_bnb.str());
+        params.put("tokenBStr", usdx_eth.str());
         BigInteger[] minAmounts = this.calMinAmountOnSwapRemoveLiquidity(params);
         System.out.println(String.format("minAmounts: %s", Arrays.deepToString(minAmounts)));
         params.put("amountAMin", minAmounts[0].toString());
         params.put("amountBMin", minAmounts[1].toString());
         params.put("deadline", deadline());
-        params.put("to", address32);
+        params.put("to", address31);
         this.sendTx(address32, SWAP_REMOVE_LIQUIDITY, params);
     }
 
@@ -378,12 +400,27 @@ public class SwapTxSendTest {
     })
     @Test
     public void swapTokenTrade() throws Exception {
-        String tokenIn = nvt.str();
-        String amountIn = "800";
-        String tokenOut = usdx_bnb.str();
-        String[] pairs = new String[]{SwapUtils.getStringPairAddress(chainId, nvt, usdx_bnb)};
+        //String tokenIn = nvt.str();
+        //String amountIn = "50";
+        //amountIn = new BigDecimal(amountIn).scaleByPowerOfTen(8).toPlainString();
+        //String tokenOut = usdx_bnb.str();
+
+        String tokenIn = usdx_bnb.str();
+        String amountIn = "5";
+        amountIn = new BigDecimal(amountIn).scaleByPowerOfTen(6).toPlainString();
+        String tokenOut = nvt.str();
+
+        //String[] pairs = new String[]{"TNVTdTSQ4vfckRXy2GWUykx174o3np9b7TC5q",
+        //                                "TNVTdTSQBq61Gw6s8R9g8Jd7p6M2859Wn7kXW",
+        //                                "TNVTdTSQBbFyEMRzhmXGdFRjQXBurtkgmgHvu",
+        //                                "TNVTdTSQCTbG8b6Xq4qFN3pFikKrwsdfJRbKJ",
+        //                                "TNVTdTSQJCuJoXDHUWH9c6pVydCiGc6Ees79i",
+        //                                "TNVTdTSQ9MxeQxwX5sYW9xoCrXZt6FLvcchZu"};
+        String[] pairs = new String[]{"TNVTdTSQB2TVBWTB4p656AzJAEDvgaXr7coUG",
+                                        "TNVTdTSQHqLpFewLDaz76CqwfvqrHqhSmNqP7"};
         Map map = this.bestTradeExactIn(tokenIn, amountIn, tokenOut, 3, pairs);
         List<String> path = (List<String>) map.get("tokenPath");
+        System.out.println(String.format("tokenPath: %s", path.toString()));
         Map outMap = (Map) map.get("tokenAmountOut");
 
         Map<String, Object> params = new HashMap<>();
@@ -408,7 +445,7 @@ public class SwapTxSendTest {
     @Test
     public void stableSwapCreatePair() throws Exception {
         Map<String, Object> params = new HashMap<>();
-        params.put("coins", new String[]{usdx_eth.str(), usdx_bnb.str(), usdx_ht.str()});
+        params.put("coins", new String[]{usdx_eth.str(), busd_18.str(), husd_18.str(), okusd_8.str()});
         this.sendTx(from, STABLE_SWAP_CREATE_PAIR, params);
     }
 
@@ -424,13 +461,18 @@ public class SwapTxSendTest {
     })
     @Test
     public void stableSwapAddLiquidity() throws Exception {
-        NulsHash txHash = NulsHash.fromHex("1bc19b3450d8ad6ae96963012b124671f0cbb87964c16de59bf90df648b1c6ea");
-        byte[] stablePairAddressBytes = AddressTool.getAddress(txHash.getBytes(), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
-        String stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);
+        //NulsHash txHash = NulsHash.fromHex("1bc19b3450d8ad6ae96963012b124671f0cbb87964c16de59bf90df648b1c6ea");
+        //byte[] stablePairAddressBytes = AddressTool.getAddress(txHash.getBytes(), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
+        //String stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);
+
+        String amountHt = new BigDecimal("500").scaleByPowerOfTen(18).toPlainString();
+        String amountBnb = new BigDecimal("2000").scaleByPowerOfTen(18).toPlainString();
+        String amountEth = new BigDecimal("300").scaleByPowerOfTen(6).toPlainString();
+        String amountOkt = new BigDecimal("200").scaleByPowerOfTen(8).toPlainString();
 
         Map<String, Object> params = new HashMap<>();
-        params.put("amounts", new String[]{"10000000000", "500000000"});
-        params.put("tokens", new String[]{usdx_ht.str(), usdx_bnb.str()});
+        params.put("amounts", new String[]{amountHt, amountBnb, amountEth, amountOkt});
+        params.put("tokens", new String[]{husd_18.str(), busd_18.str(), usdx_eth.str(), okusd_8.str()});
         params.put("pairAddress", stablePairAddress);
         params.put("deadline", deadline());
         params.put("to", address32);
@@ -450,14 +492,14 @@ public class SwapTxSendTest {
     })
     @Test
     public void stableSwapRemoveLiquidity() throws Exception {
-        NulsHash txHash = NulsHash.fromHex("1bc19b3450d8ad6ae96963012b124671f0cbb87964c16de59bf90df648b1c6ea");
-        byte[] stablePairAddressBytes = AddressTool.getAddress(txHash.getBytes(), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
-        String stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);
+        //NulsHash txHash = NulsHash.fromHex("1bc19b3450d8ad6ae96963012b124671f0cbb87964c16de59bf90df648b1c6ea");
+        //byte[] stablePairAddressBytes = AddressTool.getAddress(txHash.getBytes(), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
+        //String stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);
 
         Map<String, Object> params = new HashMap<>();
-        params.put("amountLP", "38383800");
+        params.put("amountLP", "700000000000000000000");
         params.put("tokenLPStr", stable_swap_lp.str());
-        params.put("receiveOrderIndexs", new int[]{2, 1, 0});
+        params.put("receiveOrderIndexs", new int[]{0, 2, 3, 1});
         params.put("pairAddress", stablePairAddress);
         params.put("deadline", deadline());
         params.put("to", address32);
@@ -478,12 +520,12 @@ public class SwapTxSendTest {
     })
     @Test
     public void stableSwapTokenTrade() throws Exception {
-        NulsHash txHash = NulsHash.fromHex("1bc19b3450d8ad6ae96963012b124671f0cbb87964c16de59bf90df648b1c6ea");
-        byte[] stablePairAddressBytes = AddressTool.getAddress(txHash.getBytes(), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
-        String stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);
+        //NulsHash txHash = NulsHash.fromHex("1bc19b3450d8ad6ae96963012b124671f0cbb87964c16de59bf90df648b1c6ea");
+        //byte[] stablePairAddressBytes = AddressTool.getAddress(txHash.getBytes(), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
+        //String stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);
 
         Map<String, Object> params = new HashMap<>();
-        params.put("amountsIn", new String[]{"250000000"});
+        params.put("amountsIn", new String[]{"500000000"});
         params.put("tokensIn", new String[]{usdx_eth.str()});
         params.put("tokenOutIndex", 1);
         params.put("feeTo", address51);
@@ -495,22 +537,23 @@ public class SwapTxSendTest {
 
     @Test
     public void getPairInfo() throws Exception {
-        Map map = this.getSwapPairInfo(nvt.str(), usdx_bnb.str());
+        Map map = this.getSwapPairInfo(nvt.str(), usdx_eth.str());
         System.out.println(JSONUtils.obj2PrettyJson(map));
     }
 
     @Test
     public void getStablePairInfo() throws Exception {
-        NulsHash txHash = NulsHash.fromHex("1bc19b3450d8ad6ae96963012b124671f0cbb87964c16de59bf90df648b1c6ea");
-        byte[] stablePairAddressBytes = AddressTool.getAddress(txHash.getBytes(), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
-        String stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);
+        //NulsHash txHash = NulsHash.fromHex("05e310975c23979a5bb8af587412c2b3c5006216e3eedc72756e2baac693ac94");
+        //byte[] stablePairAddressBytes = AddressTool.getAddress(txHash.getBytes(), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
+        //String stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);
+
         Map map = this.getStableSwapPairInfo(stablePairAddress);
         System.out.println(JSONUtils.obj2PrettyJson(map));
     }
 
     @Test
     public void getResult() throws Exception {
-        String hash = "b5b348a67108168caaac392da982be00feaad4357c722d4f0a752737c757b307";
+        String hash = "05e310975c23979a5bb8af587412c2b3c5006216e3eedc72756e2baac693ac94";
         Map map = this.getSwapResultInfo(hash);
         System.out.println(JSONUtils.obj2PrettyJson(map));
         System.out.println();
@@ -520,15 +563,31 @@ public class SwapTxSendTest {
 
     @Test
     public void getBestSwapPath() throws Exception {
-        String tokenIn = nvt.str();
-        String amountIn = "800";
-        String tokenOut = usdx_bnb.str();
-        String[] pairs = new String[]{SwapUtils.getStringPairAddress(chainId, nvt, usdx_bnb)};
+        String tokenIn = usdx_eth.str();
+        String amountIn = "3000000";
+        String tokenOut = goat9_bnb.str();
+        String[] pairs = new String[]{"TNVTdTSQ4vfckRXy2GWUykx174o3np9b7TC5q",
+                "TNVTdTSQBq61Gw6s8R9g8Jd7p6M2859Wn7kXW",
+                "TNVTdTSQBbFyEMRzhmXGdFRjQXBurtkgmgHvu",
+                "TNVTdTSQCTbG8b6Xq4qFN3pFikKrwsdfJRbKJ",
+                "TNVTdTSQJCuJoXDHUWH9c6pVydCiGc6Ees79i",
+                "TNVTdTSQ9MxeQxwX5sYW9xoCrXZt6FLvcchZu"};
         Map map = this.bestTradeExactIn(tokenIn, amountIn, tokenOut, 3, pairs);
         System.out.println(JSONUtils.obj2PrettyJson(map));
     }
 
+    @Test
+    public void getAmountOut() throws Exception {
+        Map<String, Object> params = new HashMap<>();
+        params.put("chainId", chainId);
+        params.put("amountIn", "5541714423");
+        params.put("tokenPath", new String[]{"5-1", "5-10"});
+        BigInteger amountOut = this.calMinAmountOnSwapTokenTrade(params);
+        System.out.println(amountOut);
+    }
+
     protected static Map<Integer, Class> busClassMap = new HashMap<>();
+
     static {
         busClassMap.put(TxType.SWAP_ADD_LIQUIDITY, AddLiquidityBus.class);
         busClassMap.put(TxType.SWAP_REMOVE_LIQUIDITY, RemoveLiquidityBus.class);
@@ -605,7 +664,7 @@ public class SwapTxSendTest {
         params.put("maxPairSize", maxPairSize);
         params.put("pairs", pairs);
         HashMap data = this.getData(BEST_TRADE_EXACT_IN, params);
-        return (Map) (data.get("value"));
+        return (Map) (data);
     }
 
     @Parameters(value = {
@@ -618,7 +677,25 @@ public class SwapTxSendTest {
         params.put("tokenAStr", tokenAStr);
         params.put("tokenBStr", tokenBStr);
         HashMap data = this.getData(SWAP_PAIR_INFO, params);
-        return (Map) (data.get("value"));
+        return (Map) (data);
+    }
+
+    protected NerveToken getPairLPToken(String tokenAStr, String tokenBStr) throws Exception {
+        Map<String, Object> params = new HashMap<>();
+        params.put("tokenAStr", tokenAStr);
+        params.put("tokenBStr", tokenBStr);
+        try {
+            HashMap data = this.getData(SWAP_PAIR_INFO, params);
+            if (data != null) {
+                Map map = (Map) data.get("po");
+                if (map != null) {
+                    return SwapUtils.parseTokenStr(map.get("tokenLP").toString());
+                }
+            }
+            return new NerveToken();
+        } catch (Exception e) {
+            return new NerveToken();
+        }
     }
 
     @Parameters(value = {
@@ -629,7 +706,7 @@ public class SwapTxSendTest {
         Map<String, Object> params = new HashMap<>();
         params.put("pairAddress", pairAddress);
         HashMap data = this.getData(STABLE_SWAP_PAIR_INFO, params);
-        return (Map) (data.get("value"));
+        return (Map) (data);
     }
 
     @Parameters(value = {
@@ -641,6 +718,30 @@ public class SwapTxSendTest {
         params.put("txHash", txHash);
         HashMap data = this.getData(SWAP_RESULT_INFO, params);
         return (Map) (data.get("value"));
+    }
+
+    @Test
+    public void proposal() throws Exception {
+        //账户已存在则覆盖 If the account exists, it covers.
+        Map<String, Object> params = new HashMap<>();
+        params.put(Constants.VERSION_KEY_STR, "1.0");
+        params.put(Constants.CHAIN_ID, chainId);
+
+        params.put("type", (byte) 9);// ProposalTypeEnum.ADDCOIN
+        params.put("content", "5-6");
+        params.put("businessAddress", stablePairAddress);// stablePairAddress
+        params.put("voteRangeType", (byte) 1);// ProposalVoteRangeTypeEnum.BANK
+        params.put("remark", "稳定币增加币种测试");
+        params.put("address", "TNVTdTSPLpegzD3B6qaVKhfj6t8cYtnkfR7Wx");
+        params.put("password", password);
+        Response cmdResp = ResponseMessageProcessor.requestAndResponse(ModuleE.CV.abbr, "cv_proposal", params);
+        System.out.println(JSONUtils.obj2PrettyJson(cmdResp));
+        HashMap result = (HashMap) ((HashMap) cmdResp.getResponseData()).get("cv_proposal");
+        String hash = (String) result.get("value");
+        String txHex = (String) result.get("hex");
+        Log.debug("hash:{}", hash);
+        Log.debug("txHex:{}", txHex);
+
     }
 
     protected long deadline() {
@@ -667,7 +768,7 @@ public class SwapTxSendTest {
             Object result = ((HashMap) cmdResp.getResponseData()).get(cmd);
             return result;
         } else {
-            System.out.println(JSONUtils.obj2PrettyJson(cmdResp));
+            //System.out.println(JSONUtils.obj2PrettyJson(cmdResp));
             throw new Exception(formatError(cmdResp));
         }
     }
@@ -683,8 +784,8 @@ public class SwapTxSendTest {
     public void getBalance() throws Exception {
         getBalanceByAddress("address31-用户地址", address31);
         getBalanceByAddress("address32-接收地址", address32);
-        getBalanceByAddress("Swap-pair地址", SwapUtils.getStringPairAddress(chainId, nvt, usdx_bnb));
-        getBalanceByAddress("Stable-Swap-pair地址", "TNVTdTSQoaic6dkMxSgwGFE9iJrBcjxnPH33g");
+        getBalanceByAddress("Swap-pair地址", SwapUtils.getStringPairAddress(chainId, dxa8_bnb, usdx_bnb));
+        getBalanceByAddress("Stable-Swap-pair地址", stablePairAddress);
         getBalanceByAddress("接收手续费的系统地址", awardFeeSystemAddress);
         getBalanceByAddress("address51-接收手续费的交易指定地址", address51);
     }
@@ -696,26 +797,33 @@ public class SwapTxSendTest {
     protected void getBalanceByAddress(String title, String address) throws Exception {
         System.out.println();
         System.out.println(String.format("%s address: %s", title, address));
-        BigInteger balance2 = LedgerCall.getBalance(chainId, chainId, assetId, address);
-        System.out.println(String.format("　主资产NVT %s-%s: %s", chainId, assetId, balance2));
 
-        BigInteger balanceOnEth = LedgerCall.getBalance(chainId, chainId, ethAssetId, address);
-        System.out.println(String.format("Ethereum-资产USDX %s-%s: %s", chainId, ethAssetId, balanceOnEth));
+        this.balanceInfoPrint("　主资产NVT", nvt, address);
 
-        BigInteger balanceOnBsc = LedgerCall.getBalance(chainId, chainId, bscAssetId, address);
-        System.out.println(String.format("BSC-资产USDX %s-%s: %s", chainId, bscAssetId, balanceOnBsc));
+        this.balanceInfoPrint("Ethereum-资产USDX", usdx_eth, address);
+        this.balanceInfoPrint("BSC-资产USDX", usdx_bnb, address);
+        this.balanceInfoPrint("BSC-资产DXA", dxa8_bnb, address);
+        this.balanceInfoPrint("BSC-资产GOAT", goat9_bnb, address);
+        this.balanceInfoPrint("BSC-资产SAFEMOON", safemoon9_bnb, address);
+        this.balanceInfoPrint("HT-资产USDX", usdx_ht, address);
+        this.balanceInfoPrint("OKT-资产USDX", usdx_okt, address);
+        this.balanceInfoPrint("BSC-资产BUSD", busd_18, address);
+        this.balanceInfoPrint("HT-资产HUSD", husd_18, address);
+        this.balanceInfoPrint("OKT-资产OKUSD", okusd_8, address);
 
-        BigInteger balanceOnHt = LedgerCall.getBalance(chainId, chainId, htAssetId, address);
-        System.out.println(String.format("HT-资产USDX %s-%s: %s", chainId, htAssetId, balanceOnHt));
+        this.balanceInfoPrint("Stable-LP资产", stable_swap_lp, address);
 
-        BigInteger balanceOnOkt = LedgerCall.getBalance(chainId, chainId, oktAssetId, address);
-        System.out.println(String.format("OKT-资产USDX %s-%s: %s", chainId, oktAssetId, balanceOnOkt));
+        this.balanceInfoPrint("Swap-LP资产(nvt8usdx_bnb)", swap_lp_nvt8usdx_bnb, address);
+        this.balanceInfoPrint("Swap-LP资产(nvt8usdx_eth)", swap_lp_nvt8usdx_eth, address);
+        this.balanceInfoPrint("Swap-LP资产(dxa8usdx_bnb)", swap_lp_dxa8usdx_bnb, address);
+        this.balanceInfoPrint("Swap-LP资产(goat9usdx_bnb)", swap_lp_goat9usdx_bnb, address);
+        this.balanceInfoPrint("Swap-LP资产(nvt8safemoon9)", swap_lp_nvt8safemoon9, address);
+        this.balanceInfoPrint("Swap-LP资产(goat9safemoon9)", swap_lp_goat9safemoon9, address);
+    }
 
-        BigInteger balanceOnStableLp = LedgerCall.getBalance(chainId, chainId, stableLpAssetId, address);
-        System.out.println(String.format("Stable-LP资产 %s-%s: %s", chainId, stableLpAssetId, balanceOnStableLp));
-
-        BigInteger balanceOnSwapLp = LedgerCall.getBalance(chainId, chainId, swapLpAssetId, address);
-        System.out.println(String.format("Swap-LP资产 %s-%s: %s", chainId, swapLpAssetId, balanceOnSwapLp));
+    private void balanceInfoPrint(String desc, NerveToken token, String address) {
+        BigInteger balance = LedgerCall.getBalance(chainId, token.getChainId(), token.getAssetId(), address);
+        System.out.println(String.format("%s %s-%s: %s", desc, token.getChainId(), token.getAssetId(), balance));
     }
 
     @Test
@@ -742,48 +850,6 @@ public class SwapTxSendTest {
         Transaction tx = Transaction.getInstance(HexUtil.decode(txStr), Transaction.class);//最后一条
         System.out.println(tx.format());
     }
-
-    @Test
-    public void withdrawalNULS() throws Exception {
-        int htgChainId = ethChainId;
-        String contract = null;
-        String from = address31;
-        String to = "0xc11d9943805e56b630a401d4bd9a29550353efa1";
-        // 19万个NULS
-        BigInteger value = new BigInteger("19000000000000");
-        BigInteger fee = new BigInteger(Long.valueOf(10_0000_0000L).toString());
-        //NerveAssetInfo assetInfo = findAssetIdByAddress(htgChainId, contract);
-        this.withdrawalByParams(from, to, value, fee, htgChainId, null);
-    }
-
-    protected void withdrawalByParams(String from, String to, BigInteger value, BigInteger fee, int heterogeneousChainId, Object assetInfo) throws Exception {
-        Map<String, Object> params = new HashMap<>();
-        params.put(Constants.VERSION_KEY_STR, "1.0");
-        params.put(Constants.CHAIN_ID, chainId);
-        params.put("heterogeneousChainId", heterogeneousChainId);
-        params.put("heterogeneousAddress", to);
-        params.put("amount", value);
-        params.put("distributionFee", fee);
-        params.put("remark", "提现");
-        params.put("address", from);
-        params.put("password", password);
-        Response cmdResp = ResponseMessageProcessor.requestAndResponse(ModuleE.CV.abbr, "cv_withdrawal", params);
-        if (cmdResp.isSuccess()) {
-            HashMap result = (HashMap) ((HashMap) cmdResp.getResponseData()).get("cv_withdrawal");
-            String hash = (String) result.get("value");
-            String txHex = (String) result.get("hex");
-            Log.info("hash:{}", hash);
-            Log.info("txHex:{}", txHex);
-        } else {
-            System.out.println(JSONUtils.obj2PrettyJson(cmdResp));
-        }
-    }
-
-
-    protected String fieldValue(String fieldName) throws Exception {
-        return this.getClass().getDeclaredField(fieldName).get(this).toString();
-    }
-
 
     @Test
     public void ledgerAssetQueryOne() throws Exception {
@@ -825,123 +891,4 @@ public class SwapTxSendTest {
         System.out.println(JSONUtils.obj2PrettyJson(cmdResp));
     }
 
-    /**
-     * 删除账户
-     */
-    @Test
-    public void removeAccountTest() throws Exception {
-        removeAccount("TNVTdTSPLEqKWrM7sXUciM2XbYPoo3xDdMtPd", password);
-    }
-
-    protected void removeAccount(String address, String password) throws Exception {
-        Map<String, Object> params = new HashMap<>();
-        params.put(Constants.VERSION_KEY_STR, "1.0");
-        params.put(Constants.CHAIN_ID, chainId);
-        params.put("address", address);
-        params.put("password", password);
-        Response cmdResp = ResponseMessageProcessor.requestAndResponse(ModuleE.AC.abbr, "ac_removeAccount", params);
-        Log.debug("{}", JSONUtils.obj2json(cmdResp.getResponseData()));
-    }
-
-    private void packageZP() {
-        agentAddress = packageAddressZP;
-        packageAddress = packageAddressZP;
-        packageAddressPrivateKey = packageAddressPrivateKeyZP;
-    }
-
-    private void packageNE() {
-        agentAddress = packageAddressNE;
-        packageAddress = packageAddressNE;
-        packageAddressPrivateKey = packageAddressPrivateKeyNE;
-    }
-
-    private void packageHF() {
-        agentAddress = packageAddressHF;
-        packageAddress = packageAddressHF;
-        packageAddressPrivateKey = packageAddressPrivateKeyHF;
-    }
-
-    private void package6() {
-        agentAddress = address26;
-        packageAddress = packageAddress6;
-        packageAddressPrivateKey = packageAddressPrivateKey6;
-    }
-
-    private void package7() {
-        agentAddress = address27;
-        packageAddress = packageAddress7;
-        packageAddressPrivateKey = packageAddressPrivateKey7;
-    }
-
-    private void package8() {
-        agentAddress = address28;
-        packageAddress = packageAddress8;
-        packageAddressPrivateKey = packageAddressPrivateKey8;
-    }
-
-    static class CoinDTO {
-        private String address;
-        private Integer assetsChainId;
-        private Integer assetsId;
-        private BigInteger amount;
-        private String password;
-        private long lockTime;
-
-        public CoinDTO(String address, Integer assetsChainId, Integer assetsId, BigInteger amount, String password, long lockTime) {
-            this.address = address;
-            this.assetsChainId = assetsChainId;
-            this.assetsId = assetsId;
-            this.amount = amount;
-            this.password = password;
-            this.lockTime = lockTime;
-        }
-
-        public void setAddress(String address) {
-            this.address = address;
-        }
-
-        public void setAssetsChainId(Integer assetsChainId) {
-            this.assetsChainId = assetsChainId;
-        }
-
-        public void setAssetsId(Integer assetsId) {
-            this.assetsId = assetsId;
-        }
-
-        public void setAmount(BigInteger amount) {
-            this.amount = amount;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public void setLockTime(long lockTime) {
-            this.lockTime = lockTime;
-        }
-
-        public String getAddress() {
-            return address;
-        }
-
-        public Integer getAssetsChainId() {
-            return assetsChainId;
-        }
-
-        public Integer getAssetsId() {
-            return assetsId;
-        }
-
-        public BigInteger getAmount() {
-            return amount;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public long getLockTime() {
-            return lockTime;
-        }
-    }
 }

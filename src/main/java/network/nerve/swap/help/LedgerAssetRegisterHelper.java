@@ -26,7 +26,7 @@ package network.nerve.swap.help;
 import io.nuls.base.basic.AddressTool;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
-import network.nerve.swap.cache.LedgerAssetCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.dto.LedgerAssetDTO;
@@ -51,7 +51,7 @@ public class LedgerAssetRegisterHelper {
     @Autowired
     private SwapStablePairStorageService swapStablePairStorageService;
     @Autowired
-    private LedgerAssetCacher ledgerAssetCacher;
+    private LedgerAssetCache ledgerAssetCache;
 
     public LedgerAssetDTO lpAssetReg(int chainId, NerveToken tokenA, NerveToken tokenB) throws Exception {
         String assetSymbol = lpTokenSymbol(tokenA, tokenB);
@@ -77,7 +77,7 @@ public class LedgerAssetRegisterHelper {
     }
 
     public LedgerAssetDTO lpAssetRegForStable(int chainId, String pairAddress, NerveToken[] coins) throws Exception {
-        LedgerAssetDTO ledgerAsset0 = ledgerAssetCacher.getLedgerAsset(coins[0]);
+        LedgerAssetDTO ledgerAsset0 = ledgerAssetCache.getLedgerAsset(coins[0]);
         String assetSymbol = SwapConstant.STABLE_PAIR + ledgerAsset0.getAssetSymbol();
         String assetAddress = pairAddress;
         Integer lpAssetId = LedgerCall.lpAssetReg(chainId, assetSymbol, LP_TOKEN_DECIMALS, assetSymbol, assetAddress);
@@ -86,6 +86,13 @@ public class LedgerAssetRegisterHelper {
         NerveToken tokenLP = new NerveToken(chainId, lpAssetId);
         po.setTokenLP(tokenLP);
         po.setCoins(coins);
+        int length = coins.length;
+        int[] decimalsOfCoins = new int[length];
+        decimalsOfCoins[0] = ledgerAsset0.getDecimalPlace();
+        for (int i = 1; i < length; i++) {
+            decimalsOfCoins[i] = ledgerAssetCache.getLedgerAsset(coins[i]).getDecimalPlace();
+        }
+        po.setDecimalsOfCoins(decimalsOfCoins);
         swapStablePairStorageService.savePair(assetAddressBytes, po);
         return new LedgerAssetDTO(chainId, lpAssetId, assetSymbol, assetSymbol, LP_TOKEN_DECIMALS);
     }
@@ -100,8 +107,8 @@ public class LedgerAssetRegisterHelper {
 
     private String lpTokenSymbol(NerveToken tokenA, NerveToken tokenB) {
         NerveToken[] tokens = SwapUtils.tokenSort(tokenA, tokenB);
-        LedgerAssetDTO ledgerAsset0 = ledgerAssetCacher.getLedgerAsset(tokens[0]);
-        LedgerAssetDTO ledgerAsset1 = ledgerAssetCacher.getLedgerAsset(tokens[1]);
+        LedgerAssetDTO ledgerAsset0 = ledgerAssetCache.getLedgerAsset(tokens[0]);
+        LedgerAssetDTO ledgerAsset1 = ledgerAssetCache.getLedgerAsset(tokens[1]);
         return new StringBuilder(ledgerAsset0.getAssetSymbol()).append("_").append(ledgerAsset1.getAssetSymbol()).append("_LP").toString();
     }
 

@@ -26,15 +26,14 @@ package network.nerve.swap.help;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import io.nuls.core.exception.NulsException;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.SwapPairCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.SwapPairCache;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.TokenAmount;
 import network.nerve.swap.model.dto.SwapPairDTO;
 import network.nerve.swap.model.vo.RouteVO;
 import network.nerve.swap.model.vo.SwapPairVO;
-import network.nerve.swap.utils.RouteVOSort;
 import network.nerve.swap.utils.SwapUtils;
 
 import java.util.ArrayList;
@@ -49,19 +48,19 @@ import java.util.List;
 public class SwapHelper {
 
     @Autowired
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
     @Autowired("PersistencePairFactory")
     private IPairFactory iPairFactory;
     @Autowired
-    private LedgerAssetCacher ledgerAssetCacher;
+    private LedgerAssetCache ledgerAssetCache;
 
     public List<RouteVO> bestTradeExactIn(int chainId, List<String> pairs, TokenAmount tokenAmountIn, NerveToken out, int maxPairSize) throws NulsException {
-        if (ledgerAssetCacher.getLedgerAsset(tokenAmountIn.getToken()) == null || ledgerAssetCacher.getLedgerAsset(out) == null) {
+        if (ledgerAssetCache.getLedgerAsset(tokenAmountIn.getToken()) == null || ledgerAssetCache.getLedgerAsset(out) == null) {
             throw new NulsException(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
         }
         List<SwapPairVO> swapPairs = new ArrayList<>();
         for (String pairAddress : pairs) {
-            SwapPairDTO pairDTO = swapPairCacher.get(pairAddress);
+            SwapPairDTO pairDTO = swapPairCache.get(pairAddress);
             if (pairDTO == null) {
                 throw new NulsException(SwapErrorCode.PAIR_NOT_EXIST);
             }

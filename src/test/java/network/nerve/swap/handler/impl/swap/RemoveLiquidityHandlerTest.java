@@ -26,48 +26,28 @@ package network.nerve.swap.handler.impl.swap;
 import io.nuls.base.basic.AddressTool;
 import io.nuls.base.data.BlockHeader;
 import io.nuls.base.data.Transaction;
-import io.nuls.core.core.ioc.SpringLiteContext;
 import io.nuls.core.crypto.HexUtil;
-import io.nuls.core.exception.NulsException;
-import io.nuls.core.log.logback.LoggerBuilder;
-import io.nuls.core.rpc.model.ModuleE;
 import network.nerve.swap.JunitCase;
 import network.nerve.swap.JunitExecuter;
 import network.nerve.swap.JunitUtils;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.SwapPairCacher;
-import network.nerve.swap.cache.impl.SwapPairCacherImpl;
-import network.nerve.swap.config.ConfigBean;
-import network.nerve.swap.constant.SwapConstant;
+import network.nerve.swap.cache.LedgerAssetCache;
 import network.nerve.swap.handler.ISwapHandler;
-import network.nerve.swap.handler.impl.AddLiquidityHandler;
 import network.nerve.swap.handler.impl.RemoveLiquidityHandler;
 import network.nerve.swap.help.IPair;
 import network.nerve.swap.help.IPairFactory;
-import network.nerve.swap.help.impl.TemporaryPairFactory;
-import network.nerve.swap.manager.ChainManager;
 import network.nerve.swap.manager.LedgerTempBalanceManager;
-import network.nerve.swap.manager.SwapTempPairManager;
 import network.nerve.swap.model.Chain;
 import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.bo.BatchInfo;
-import network.nerve.swap.model.bo.LedgerBalance;
 import network.nerve.swap.model.bo.SwapResult;
-import network.nerve.swap.model.business.AddLiquidityBus;
 import network.nerve.swap.model.business.RemoveLiquidityBus;
 import network.nerve.swap.model.dto.LedgerAssetDTO;
-import network.nerve.swap.model.dto.RealAddLiquidityOrderDTO;
 import network.nerve.swap.model.dto.SwapPairDTO;
-import network.nerve.swap.model.po.SwapPairPO;
-import network.nerve.swap.model.po.SwapPairReservesPO;
-import network.nerve.swap.storage.SwapPairReservesStorageService;
-import network.nerve.swap.storage.SwapPairStorageService;
 import network.nerve.swap.utils.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -105,8 +85,8 @@ public class RemoveLiquidityHandlerTest {
         address21 = addLiquidityHandlerTest.address21;
         BeanUtilTest.setBean(handler, "chainManager", addLiquidityHandlerTest.chainManager);
         BeanUtilTest.setBean(handler, "iPairFactory", iPairFactory);
-        BeanUtilTest.setBean(handler, "swapPairCacher", addLiquidityHandlerTest.swapPairCacher);
-        BeanUtilTest.setBean(handler, "ledgerAssetCacher", new LedgerAssetCacher() {
+        BeanUtilTest.setBean(handler, "swapPairCache", addLiquidityHandlerTest.swapPairCache);
+        BeanUtilTest.setBean(handler, "ledgerAssetCache", new LedgerAssetCache() {
             @Override
             public LedgerAssetDTO getLedgerAsset(int chainId, int assetId) {
                 String key = chainId + "-" + assetId;

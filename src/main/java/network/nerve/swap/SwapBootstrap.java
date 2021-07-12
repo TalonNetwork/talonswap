@@ -34,6 +34,7 @@ import io.nuls.base.protocol.cmd.TransactionDispatcher;
 import io.nuls.core.constant.TxType;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
+import io.nuls.core.core.config.ConfigurationLoader;
 import io.nuls.core.core.ioc.SpringLiteContext;
 import io.nuls.core.crypto.HexUtil;
 import io.nuls.core.exception.NulsException;
@@ -56,6 +57,7 @@ import network.nerve.swap.rpc.call.BlockCall;
 import network.nerve.swap.rpc.call.TransactionCall;
 import network.nerve.swap.tx.common.TransactionCommitAdvice;
 import network.nerve.swap.tx.common.TransactionRollbackAdvice;
+import network.nerve.swap.tx.common.TransactionValidatorAdvice;
 
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
@@ -92,11 +94,23 @@ public class SwapBootstrap extends RpcModule {
             //增加地址工具类初始化
             AddressTool.init(addressPrefixDatas);
             initDB();
+            initProtocolUpdate();
             initContext();
             chainManager.initChain();
             ModuleHelper.init(this);
         } catch (Exception e) {
             Log.error("module init error!", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void initProtocolUpdate() {
+        ConfigurationLoader configurationLoader = SpringLiteContext.getBean(ConfigurationLoader.class);
+        try {
+            long heightVersion1_13_0 = Long.parseLong(configurationLoader.getValue(ModuleE.Constant.PROTOCOL_UPDATE, "height_1_13_0"));
+            SwapContext.PROTOCOL_UPGRADE_HEIGHT = heightVersion1_13_0;
+        } catch (Exception e) {
+            Log.error("Failed to get height_1_13_0", e);
             throw new RuntimeException(e);
         }
     }
@@ -107,7 +121,8 @@ public class SwapBootstrap extends RpcModule {
             TransactionDispatcher dispatcher = SpringLiteContext.getBean(TransactionDispatcher.class);
             TransactionCommitAdvice commitAdvice = SpringLiteContext.getBean(TransactionCommitAdvice.class);
             TransactionRollbackAdvice rollbackAdvice = SpringLiteContext.getBean(TransactionRollbackAdvice.class);
-            dispatcher.register(commitAdvice, rollbackAdvice);
+            TransactionValidatorAdvice validatorAdvice = SpringLiteContext.getBean(TransactionValidatorAdvice.class);
+            dispatcher.register(commitAdvice, rollbackAdvice, validatorAdvice);
             Log.info("module chain do start");
             return true;
         } catch (Exception e) {
@@ -216,6 +231,7 @@ public class SwapBootstrap extends RpcModule {
         SwapContext.BLACKHOLE_PUBKEY = HexUtil.decode(swapConfig.getBlackHolePublicKey());
         // 手续费奖励的系统接收地址
         SwapContext.AWARD_FEE_SYSTEM_ADDRESS = AddressTool.getAddressByPubKeyStr(swapConfig.getAwardFeeSystemAddressPublicKey(), swapConfig.getChainId());
+        SwapContext.AWARD_FEE_DESTRUCTION_ADDRESS = AddressTool.getAddressByPubKeyStr(swapConfig.getAwardFeeDestructionAddressPublicKey(), swapConfig.getChainId());
     }
 
     private void setSwapGenerateTxTypes(int currentChainId) {

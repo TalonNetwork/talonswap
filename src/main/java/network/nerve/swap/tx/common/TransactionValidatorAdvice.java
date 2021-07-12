@@ -1,7 +1,7 @@
 /**
  * MIT License
  * <p>
- * Copyright (c) 2017-2018 nuls.io
+ * Copyright (c) 2017-2019 nuls.io
  * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,56 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package network.nerve.swap.handler;
+package network.nerve.swap.tx.common;
 
+import io.nuls.base.data.BlockHeader;
 import io.nuls.base.data.Transaction;
-import io.nuls.core.basic.Result;
+import io.nuls.base.protocol.CommonAdvice;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
-import io.nuls.core.exception.NulsException;
+import io.nuls.core.exception.NulsRuntimeException;
 import network.nerve.swap.constant.SwapErrorCode;
+import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.manager.ChainManager;
-import network.nerve.swap.manager.LedgerTempBalanceManager;
 import network.nerve.swap.model.Chain;
-import network.nerve.swap.model.bo.BatchInfo;
-import network.nerve.swap.model.bo.SwapResult;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 /**
  * @author: PierreLuo
- * @date: 2021/4/1
+ * @date: 2021/7/7
  */
 @Component
-public class SwapInvoker implements ISwapInvoker {
+public class TransactionValidatorAdvice implements CommonAdvice {
 
     @Autowired
     private ChainManager chainManager;
 
-    private Map<Integer, ISwapHandler> map = new HashMap<>();
-
     @Override
-    public void registerHandler(ISwapHandler handler) {
-        map.put(handler.txType(), handler);
-    }
-
-    @Override
-    public SwapResult invoke(int chainId, Transaction tx, long blockHeight, long blockTime) throws NulsException {
-        ISwapHandler iSwapHandler = map.get(tx.getType());
-        if (iSwapHandler == null) {
-            throw new NulsException(SwapErrorCode.NULL_PARAMETER);
-        }
+    public void begin(int chainId, List<Transaction> txList, BlockHeader blockHeader, int syncStatus) {
         Chain chain = chainManager.getChain(chainId);
-        BatchInfo batchInfo = chain.getBatchInfo();
-        // 缓存高度必须一致
-        if (blockHeight != batchInfo.getCurrentBlockHeader().getHeight()) {
-            throw new NulsException(SwapErrorCode.BLOCK_HEIGHT_INCONSISTENCY);
+        if (chain.getLatestBasicBlock().getHeight() < SwapContext.PROTOCOL_UPGRADE_HEIGHT) {
+            throw new NulsRuntimeException(SwapErrorCode.TX_TYPE_INVALID);
         }
-        // 刷新临时余额
-        LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
-        tempBalanceManager.refreshTempBalance(chainId, tx, blockTime);
-        // 执行交易业务
-        return iSwapHandler.execute(chainId, tx, blockHeight, blockTime);
     }
+
+    @Override
+    public void end(int chainId, List<Transaction> txList, BlockHeader blockHeader) {}
 }

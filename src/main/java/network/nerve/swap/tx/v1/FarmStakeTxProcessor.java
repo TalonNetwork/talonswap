@@ -9,7 +9,7 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.crypto.HexUtil;
 import io.nuls.core.log.Log;
 import io.nuls.core.log.logback.NulsLogger;
-import network.nerve.swap.cache.FarmCacher;
+import network.nerve.swap.cache.FarmCache;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.manager.ChainManager;
@@ -42,7 +42,7 @@ public class FarmStakeTxProcessor implements TransactionProcessor {
     @Autowired
     private FarmStakeHelper helper;
     @Autowired
-    private FarmCacher farmCacher;
+    private FarmCache farmCache;
     @Autowired
     private FarmUserInfoStorageService userInfoStorageService;
     @Autowired
@@ -103,17 +103,18 @@ public class FarmStakeTxProcessor implements TransactionProcessor {
             Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                this.swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 FarmBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), FarmBus.class);
                 //更新Farm
-                FarmPoolPO farm = farmCacher.get(bus.getFarmHash());
+                FarmPoolPO farm = farmCache.get(bus.getFarmHash());
                 farm.setLastRewardBlock(bus.getLastRewardBlockNew());
                 farm.setAccSyrupPerShare(bus.getAccSyrupPerShareNew());
                 farm.setSyrupTokenBalance(bus.getSyrupBalanceNew());
                 farm.setStakeTokenBalance(bus.getStakingBalanceNew());
-                farmCacher.put(bus.getFarmHash(), farm);
+                farmCache.put(bus.getFarmHash(), farm);
                 farmStorageService.save(chainId, farm);
                 //更新User
                 FarmUserInfoPO user = this.userInfoStorageService.load(chainId, bus.getFarmHash(), bus.getUserAddress());
@@ -125,7 +126,6 @@ public class FarmStakeTxProcessor implements TransactionProcessor {
                 user.setRewardDebt(bus.getUserRewardDebtNew());
                 user.setAmount(bus.getUserAmountNew());
                 this.userInfoStorageService.save(chainId, user);
-                this.swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -147,29 +147,31 @@ public class FarmStakeTxProcessor implements TransactionProcessor {
             for (Transaction tx : txs) {
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 FarmBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), FarmBus.class);
                 //更新Farm
-                FarmPoolPO farm = farmCacher.get(bus.getFarmHash());
+                FarmPoolPO farm = farmCache.get(bus.getFarmHash());
                 farm.setLastRewardBlock(bus.getLastRewardBlockOld());
                 farm.setAccSyrupPerShare(bus.getAccSyrupPerShareOld());
                 farm.setSyrupTokenBalance(bus.getSyrupBalanceOld());
                 farm.setStakeTokenBalance(bus.getStakingBalanceOld());
-                farmCacher.put(bus.getFarmHash(), farm);
+                farmCache.put(bus.getFarmHash(), farm);
                 farmStorageService.save(chainId, farm);
                 //更新User
-                FarmUserInfoPO user = this.userInfoStorageService.load(chainId, bus.getFarmHash(), bus.getUserAddress());
-                if (null == user) {
-                    return true;
-                }
-                if (bus.getUserAmountOld().compareTo(BigInteger.ZERO) == 0) {
-                    this.userInfoStorageService.delete(chainId, bus.getFarmHash(), bus.getUserAddress());
-                    return true;
-                }
-                user.setRewardDebt(bus.getUserRewardDebtOld());
-                user.setAmount(bus.getUserAmountOld());
-                this.userInfoStorageService.save(chainId, user);
+                do {
+                    FarmUserInfoPO user = this.userInfoStorageService.load(chainId, bus.getFarmHash(), bus.getUserAddress());
+                    if (null == user) {
+                        break;
+                    }
+                    if (bus.getUserAmountOld().compareTo(BigInteger.ZERO) == 0) {
+                        this.userInfoStorageService.delete(chainId, bus.getFarmHash(), bus.getUserAddress());
+                        break;
+                    }
+                    user.setRewardDebt(bus.getUserRewardDebtOld());
+                    user.setAmount(bus.getUserAmountOld());
+                    this.userInfoStorageService.save(chainId, user);
+                } while (false);
                 this.swapExecuteResultStorageService.delete(chainId, tx.getHash());
             }
         } catch (Exception e) {

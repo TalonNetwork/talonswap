@@ -30,7 +30,6 @@ public class StableAddLiquidityData extends BaseNulsData {
     public int size() {
         int size = 0;
         size += Address.ADDRESS_LENGTH;
-        size += SerializeUtils.sizeOfUint32();
         return size;
     }
 

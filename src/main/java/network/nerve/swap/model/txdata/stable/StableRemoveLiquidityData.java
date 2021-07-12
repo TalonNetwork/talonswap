@@ -34,7 +34,6 @@ public class StableRemoveLiquidityData extends BaseNulsData {
     public int size() {
         int size = SerializeUtils.sizeOfBytes(indexs);
         size += Address.ADDRESS_LENGTH;
-        size += SerializeUtils.sizeOfUint32();
         return size;
     }
 

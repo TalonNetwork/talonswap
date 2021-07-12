@@ -32,10 +32,9 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
 import io.nuls.core.log.logback.NulsLogger;
-import network.nerve.swap.cache.LedgerAssetCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
-import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.handler.ISwapInvoker;
 import network.nerve.swap.handler.SwapHandlerConstraints;
 import network.nerve.swap.manager.ChainManager;
@@ -65,7 +64,7 @@ public class CreateStablePairHandler extends SwapHandlerConstraints {
     @Autowired
     private ChainManager chainManager;
     @Autowired
-    private LedgerAssetCacher ledgerAssetCacher;
+    private LedgerAssetCache ledgerAssetCache;
 
     @Override
     public Integer txType() {
@@ -101,10 +100,14 @@ public class CreateStablePairHandler extends SwapHandlerConstraints {
                 if (!coinSet.add(token)) {
                     throw new NulsException(IDENTICAL_TOKEN);
                 }
-                LedgerAssetDTO asset = ledgerAssetCacher.getLedgerAsset(token);
+                LedgerAssetDTO asset = ledgerAssetCache.getLedgerAsset(token);
                 if (asset == null) {
                     logger.error("Ledger asset not exist! hash-{}", txHash.toHex());
                     throw new NulsException(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
+                }
+                if (asset.getDecimalPlace() > 18) {
+                    logger.error("coin_decimal_exceeded! hash-{}", txHash.toHex());
+                    throw new NulsException(SwapErrorCode.COIN_DECIMAL_EXCEEDED);
                 }
             }
 
@@ -123,7 +126,7 @@ public class CreateStablePairHandler extends SwapHandlerConstraints {
             result.setTxTime(tx.getTime());
             result.setBlockHeight(blockHeight);
 
-        } catch (NulsException e) {
+        } catch (Exception e) {
             Log.error(e);
             // 装填失败的执行结果
             result.setTxType(txType());
@@ -131,7 +134,7 @@ public class CreateStablePairHandler extends SwapHandlerConstraints {
             result.setHash(tx.getHash().toHex());
             result.setTxTime(tx.getTime());
             result.setBlockHeight(blockHeight);
-            result.setErrorMessage(e.format());
+            result.setErrorMessage(e instanceof NulsException ? ((NulsException) e).format() : e.getMessage());
         }
         batchInfo.getSwapResultMap().put(tx.getHash().toHex(), result);
         return result;

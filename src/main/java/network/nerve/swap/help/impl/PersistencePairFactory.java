@@ -25,9 +25,8 @@ package network.nerve.swap.help.impl;
 
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
-import network.nerve.swap.cache.StableSwapPairCacher;
-import network.nerve.swap.cache.SwapPairCacher;
-import network.nerve.swap.context.SwapContext;
+import network.nerve.swap.cache.StableSwapPairCache;
+import network.nerve.swap.cache.SwapPairCache;
 import network.nerve.swap.help.IPair;
 import network.nerve.swap.help.IPairFactory;
 import network.nerve.swap.help.IStablePair;
@@ -45,23 +44,23 @@ import network.nerve.swap.storage.SwapStablePairBalancesStorageService;
 public class PersistencePairFactory implements IPairFactory {
 
     @Autowired
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
     @Autowired
     private SwapPairReservesStorageService swapPairReservesStorageService;
     @Autowired
-    private StableSwapPairCacher stableSwapPairCacher;
+    private StableSwapPairCache stableSwapPairCache;
     @Autowired
     private SwapStablePairBalancesStorageService swapStablePairBalancesStorageService;
 
     @Override
     public IPair getPair(String pairAddress) {
-        SwapPairDTO pairDTO = swapPairCacher.get(pairAddress);
-        return new PersistencePair(pairDTO, swapPairReservesStorageService, swapPairCacher);
+        SwapPairDTO pairDTO = swapPairCache.get(pairAddress);
+        return new PersistencePair(pairDTO, swapPairReservesStorageService, swapPairCache);
     }
 
     @Override
     public IStablePair getStablePair(String pairAddress) {
-        StableSwapPairDTO pairDTO = stableSwapPairCacher.get(pairAddress);
-        return new PersistenceStablePair(pairDTO, swapStablePairBalancesStorageService, stableSwapPairCacher);
+        StableSwapPairDTO pairDTO = stableSwapPairCache.get(pairAddress);
+        return new PersistenceStablePair(pairDTO, swapStablePairBalancesStorageService, stableSwapPairCache);
     }
 }

@@ -33,8 +33,8 @@ import io.nuls.core.rpc.model.ModuleE;
 import network.nerve.swap.JunitCase;
 import network.nerve.swap.JunitExecuter;
 import network.nerve.swap.JunitUtils;
-import network.nerve.swap.cache.SwapPairCacher;
-import network.nerve.swap.cache.impl.SwapPairCacherImpl;
+import network.nerve.swap.cache.SwapPairCache;
+import network.nerve.swap.cache.impl.SwapPairCacheImpl;
 import network.nerve.swap.config.ConfigBean;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.handler.ISwapHandler;
@@ -75,7 +75,7 @@ public class AddLiquidityHandlerTest {
 
     protected AddLiquidityHandler handler;
     protected IPairFactory iPairFactory;
-    protected SwapPairCacher swapPairCacher;
+    protected SwapPairCache swapPairCache;
     protected Chain chain;
     protected ChainManager chainManager;
     protected NerveToken token0;
@@ -88,13 +88,13 @@ public class AddLiquidityHandlerTest {
     public void init() {
         handler = new AddLiquidityHandler();
         iPairFactory = new TemporaryPairFactory();
-        swapPairCacher = new SwapPairCacherImpl();
-        SpringLiteContext.putBean(swapPairCacher.getClass().getName(), swapPairCacher);
+        swapPairCache = new SwapPairCacheImpl();
+        SpringLiteContext.putBean(swapPairCache.getClass().getName(), swapPairCache);
         int chainId = 5;
         long blockHeight = 20L;
-        token0 = new NerveToken(chainId, 1);
-        token1 = new NerveToken(chainId, 2);
-        tokenLP = new NerveToken(chainId, 3);
+        token0 = new NerveToken(chainId, 13);
+        token1 = new NerveToken(chainId, 10);
+        tokenLP = new NerveToken(chainId, 18);
 
         chainManager = new ChainManager();
         chain = new Chain();
@@ -121,8 +121,8 @@ public class AddLiquidityHandlerTest {
         BeanUtilTest.setBean(handler, "chainManager", chainManager);
         BeanUtilTest.setBean(handler, "iPairFactory", iPairFactory);
         BeanUtilTest.setBean(iPairFactory, "chainManager", chainManager);
-        BeanUtilTest.setBean(swapPairCacher, "chainManager", chainManager);
-        BeanUtilTest.setBean(swapPairCacher, "swapPairStorageService", new SwapPairStorageService() {
+        BeanUtilTest.setBean(swapPairCache, "chainManager", chainManager);
+        BeanUtilTest.setBean(swapPairCache, "swapPairStorageService", new SwapPairStorageService() {
             @Override
             public boolean savePair(byte[] address, SwapPairPO po) throws Exception {
                 return true;
@@ -162,7 +162,7 @@ public class AddLiquidityHandlerTest {
                 return true;
             }
         });
-        BeanUtilTest.setBean(swapPairCacher, "swapPairReservesStorageService", new SwapPairReservesStorageService() {
+        BeanUtilTest.setBean(swapPairCache, "swapPairReservesStorageService", new SwapPairReservesStorageService() {
             @Override
             public boolean savePairReserves(String address, SwapPairReservesPO dto) throws Exception {
                 return true;
@@ -200,13 +200,13 @@ public class AddLiquidityHandlerTest {
         items.add(getCase0());
         JunitUtils.execute(items, executer);
 
-        items.clear();
-        items.add(getCase1());
-        JunitUtils.execute(items, executer);
-
-        items.clear();
-        items.add(getCase2());
-        JunitUtils.execute(items, executer);
+        //items.clear();
+        //items.add(getCase1());
+        //JunitUtils.execute(items, executer);
+        //
+        //items.clear();
+        //items.add(getCase2());
+        //JunitUtils.execute(items, executer);
     }
 
     // NULS && USDT
@@ -228,7 +228,7 @@ public class AddLiquidityHandlerTest {
         LedgerBalance ledgerBalance1 = tempBalanceManager.getBalance(fromBytes, token1.getChainId(), token1.getAssetId()).getData();
         ledgerBalance1.setBalance(BigInteger.valueOf(200000_000000L));
 
-        BigInteger amountA = BigInteger.valueOf(200_00000000L);
+        BigInteger amountA = BigInteger.valueOf(150_00000000L);
         BigInteger amountB = BigInteger.valueOf(100_000000L);
         BigInteger amountAMin = BigInteger.valueOf(200_00000000L);
         BigInteger amountBMin = BigInteger.valueOf(100_000000L);
@@ -278,13 +278,14 @@ public class AddLiquidityHandlerTest {
         LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
         BigInteger amountA = BigInteger.valueOf(300_00000000L);
         BigInteger amountB = BigInteger.valueOf(200_000000L);
+        byte[] to = AddressTool.getAddress(address21);
         RealAddLiquidityOrderDTO dto = SwapUtils.calcAddLiquidity(chainId, iPairFactory, token0, token1, amountA, amountB, BigInteger.ZERO, BigInteger.ZERO);
 
-        BigInteger amountAMin = dto.getRealAddLiquidityA();
-        BigInteger amountBMin = dto.getRealAddLiquidityB();
+        BigInteger amountAMin = dto.getRealAmountA();
+        BigInteger amountBMin = dto.getRealAmountB();
         long deadline = System.currentTimeMillis() / 1000 + 300;
         String from = address20;
-        byte[] to = AddressTool.getAddress(address21);
+
         BigInteger _toAddressBalanceLP = tempBalanceManager.getBalance(to, tokenLP.getChainId(), tokenLP.getAssetId()).getData().getBalance();
         Transaction tx = TxAssembleUtil.asmbSwapAddLiquidity(chainId, from,
                 amountA, amountB,
@@ -328,10 +329,11 @@ public class AddLiquidityHandlerTest {
         LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
         BigInteger amountA = BigInteger.valueOf(500_00000000L);
         BigInteger amountB = BigInteger.valueOf(200_000000L);
+        byte[] to = AddressTool.getAddress(address21);
         RealAddLiquidityOrderDTO dto = SwapUtils.calcAddLiquidity(chainId, iPairFactory, token0, token1, amountA, amountB, BigInteger.ZERO, BigInteger.ZERO);
 
-        BigInteger amountAMin = dto.getRealAddLiquidityA();
-        BigInteger amountBMin = dto.getRealAddLiquidityB();
+        BigInteger amountAMin = dto.getRealAmountA();
+        BigInteger amountBMin = dto.getRealAmountB();
         long deadline = System.currentTimeMillis() / 1000 + 3;
         // 造成超时
         TimeUnit.SECONDS.sleep(5);
@@ -339,7 +341,7 @@ public class AddLiquidityHandlerTest {
         header.setTime(System.currentTimeMillis() / 1000);
 
         String from = address20;
-        byte[] to = AddressTool.getAddress(address21);
+
         Transaction tx = TxAssembleUtil.asmbSwapAddLiquidity(chainId, from,
                 amountA, amountB,
                 token0, token1,

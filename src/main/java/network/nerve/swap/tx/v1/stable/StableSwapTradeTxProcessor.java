@@ -93,7 +93,7 @@ public class StableSwapTradeTxProcessor implements TransactionProcessor {
                 byte tokenOutIndex = txData.getTokenOutIndex();
                 coinData = tx.getCoinDataInstance();
                 dto = stableSwapTradeHandler.getStableSwapTradeInfo(chainId, coinData, iPairFactory, tokenOutIndex);
-                SwapUtils.calStableSwapTradeBusiness(chainId, iPairFactory, dto.getAmountsIn(), tokenOutIndex, dto.getPairAddress(), txData.getTo());
+                SwapUtils.calStableSwapTradeBusiness(chainId, iPairFactory, dto.getAmountsIn(), tokenOutIndex, dto.getPairAddress(), txData.getTo(), txData.getFeeTo());
             } catch (NulsException e) {
                 Log.error(e);
                 failsList.add(tx);
@@ -120,10 +120,12 @@ public class StableSwapTradeTxProcessor implements TransactionProcessor {
                 return true;
             }
             for (Transaction tx : txs) {
+                logger.info("[commit] Stable Swap Trade, hash: {}", tx.getHash().toHex());
                 // 从执行结果中提取业务数据
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 StableSwapTradeBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), StableSwapTradeBus.class);
                 CoinData coinData = tx.getCoinDataInstance();
@@ -132,8 +134,6 @@ public class StableSwapTradeTxProcessor implements TransactionProcessor {
                 IStablePair stablePair = iPairFactory.getStablePair(pairAddress);
                 // 更新Pair的资金池和发行总量
                 stablePair.update(dto.getUserAddress(), BigInteger.ZERO, bus.getChangeBalances(), bus.getBalances(), blockHeader.getHeight(), blockHeader.getTime());
-                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
-                logger.info("[commit] Stable Swap Trade, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -154,10 +154,10 @@ public class StableSwapTradeTxProcessor implements TransactionProcessor {
             for (Transaction tx : txs) {
                 SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    return true;
+                    continue;
                 }
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 StableSwapTradeBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), StableSwapTradeBus.class);
                 CoinData coinData = tx.getCoinDataInstance();

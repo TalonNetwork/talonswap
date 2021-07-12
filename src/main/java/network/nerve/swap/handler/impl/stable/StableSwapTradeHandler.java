@@ -103,7 +103,7 @@ public class StableSwapTradeHandler extends SwapHandlerConstraints {
             StableSwapPairPo pairPo = stablePair.getPair();
             NerveToken[] coins = pairPo.getCoins();
             // 整合计算数据
-            StableSwapTradeBus bus = SwapUtils.calStableSwapTradeBusiness(chainId, iPairFactory, dto.getAmountsIn(), tokenOutIndex, dto.getPairAddress(), txData.getTo());
+            StableSwapTradeBus bus = SwapUtils.calStableSwapTradeBusiness(chainId, iPairFactory, dto.getAmountsIn(), tokenOutIndex, dto.getPairAddress(), txData.getTo(), txData.getFeeTo());
             // 装填执行结果
             result.setTxType(txType());
             result.setSuccess(true);

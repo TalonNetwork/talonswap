@@ -25,7 +25,7 @@ package network.nerve.swap.help.impl.stable;
 
 import io.nuls.base.basic.AddressTool;
 import io.nuls.core.exception.NulsException;
-import network.nerve.swap.cache.StableSwapPairCacher;
+import network.nerve.swap.cache.StableSwapPairCache;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.model.dto.stable.StableSwapPairDTO;
 import network.nerve.swap.model.po.stable.StableSwapPairBalancesPo;
@@ -41,14 +41,14 @@ public class PersistenceStablePair extends AbstractStablePair {
 
     private StableSwapPairDTO stableSwapPairDTO;
     private SwapStablePairBalancesStorageService swapStablePairBalancesStorageService;
-    private StableSwapPairCacher stableSwapPairCacher;
+    private StableSwapPairCache stableSwapPairCache;
 
     public PersistenceStablePair(StableSwapPairDTO stableSwapPairDTO,
                                  SwapStablePairBalancesStorageService swapStablePairBalancesStorageService,
-                                 StableSwapPairCacher stableSwapPairCacher) {
+                                 StableSwapPairCache stableSwapPairCache) {
         this.stableSwapPairDTO = stableSwapPairDTO;
         this.swapStablePairBalancesStorageService = swapStablePairBalancesStorageService;
-        this.stableSwapPairCacher = stableSwapPairCacher;
+        this.stableSwapPairCache = stableSwapPairCache;
     }
 
     @Override
@@ -75,7 +75,7 @@ public class PersistenceStablePair extends AbstractStablePair {
         swapStableUserLiquidityStorageService.save(userAddress, liquidityPo);*/
 
         // 更新缓存
-        stableSwapPairCacher.remove(pairAddress);
+        stableSwapPairCache.remove(pairAddress);
     }
 
     @Override
@@ -99,7 +99,7 @@ public class PersistenceStablePair extends AbstractStablePair {
         }
         swapStableUserLiquidityStorageService.save(userAddress, liquidityPo);*/
         // 更新缓存
-        stableSwapPairCacher.remove(pairAddress);
+        stableSwapPairCache.remove(pairAddress);
     }
 
     private void savePairBalances(String pairAddress, BigInteger[] balancesCurrent, BigInteger totalLP, Long blockTime, Long blockHeight) throws Exception {

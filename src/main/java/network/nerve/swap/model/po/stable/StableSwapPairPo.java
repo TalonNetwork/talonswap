@@ -12,6 +12,7 @@ public class StableSwapPairPo {
     private byte[] address;
     private NerveToken tokenLP;
     private NerveToken[] coins;
+    private int[] decimalsOfCoins;
 
     public StableSwapPairPo(byte[] address) {
         this.address = address;
@@ -41,11 +42,20 @@ public class StableSwapPairPo {
         this.coins = coins;
     }
 
+    public int[] getDecimalsOfCoins() {
+        return decimalsOfCoins;
+    }
+
+    public void setDecimalsOfCoins(int[] decimalsOfCoins) {
+        this.decimalsOfCoins = decimalsOfCoins;
+    }
+
     @Override
     public StableSwapPairPo clone() {
         StableSwapPairPo po = new StableSwapPairPo(address);
         po.setTokenLP(tokenLP);
         po.setCoins(coins);
+        po.setDecimalsOfCoins(decimalsOfCoins);
         return po;
     }
 
@@ -55,13 +65,16 @@ public class StableSwapPairPo {
         sb.append("\"address\":")
                 .append('\"').append(AddressTool.getStringAddressByBytes(address)).append('\"');
         sb.append(",\"tokenLP\":")
-                .append(tokenLP.str());
+                .append('\"').append(tokenLP.str()).append('\"');
         sb.append(",\"coins\":[");
         for (NerveToken coin : coins) {
             sb.append('\"').append(coin.str()).append("\",");
         }
         sb.deleteCharAt(sb.length() - 1);
-        sb.append("]}");
+        sb.append("]");
+        sb.append(",\"decimalsOfCoins\":")
+            .append(Arrays.toString(decimalsOfCoins));
+        sb.append("}");
         return sb.toString();
     }
 

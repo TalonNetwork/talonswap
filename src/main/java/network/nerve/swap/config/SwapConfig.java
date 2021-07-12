@@ -45,6 +45,18 @@ public class SwapConfig extends ConfigBean implements ModuleConfig {
      * 手续费奖励的系统接收地址公钥
      */
     private String awardFeeSystemAddressPublicKey;
+    /**
+     * 手续费奖励的销毁地址公钥
+     */
+    private String awardFeeDestructionAddressPublicKey;
+
+    public String getAwardFeeDestructionAddressPublicKey() {
+        return awardFeeDestructionAddressPublicKey;
+    }
+
+    public void setAwardFeeDestructionAddressPublicKey(String awardFeeDestructionAddressPublicKey) {
+        this.awardFeeDestructionAddressPublicKey = awardFeeDestructionAddressPublicKey;
+    }
 
     public String getAwardFeeSystemAddressPublicKey() {
         return awardFeeSystemAddressPublicKey;

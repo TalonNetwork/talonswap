@@ -33,13 +33,11 @@ import io.nuls.core.rpc.model.ModuleE;
 import network.nerve.swap.JunitCase;
 import network.nerve.swap.JunitExecuter;
 import network.nerve.swap.JunitUtils;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.StableSwapPairCacher;
-import network.nerve.swap.cache.impl.StableSwapPairCacherImpl;
+import network.nerve.swap.cache.StableSwapPairCache;
+import network.nerve.swap.cache.impl.StableSwapPairCacheImpl;
 import network.nerve.swap.config.ConfigBean;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.handler.ISwapHandler;
-import network.nerve.swap.handler.impl.stable.CreateStablePairHandler;
 import network.nerve.swap.handler.impl.stable.StableAddLiquidityHandler;
 import network.nerve.swap.handler.impl.swap.LedgerTempBalanceManagerMock;
 import network.nerve.swap.help.IPairFactory;
@@ -52,9 +50,7 @@ import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.bo.BatchInfo;
 import network.nerve.swap.model.bo.LedgerBalance;
 import network.nerve.swap.model.bo.SwapResult;
-import network.nerve.swap.model.business.AddLiquidityBus;
 import network.nerve.swap.model.business.stable.StableAddLiquidityBus;
-import network.nerve.swap.model.dto.LedgerAssetDTO;
 import network.nerve.swap.model.po.stable.StableSwapPairBalancesPo;
 import network.nerve.swap.model.po.stable.StableSwapPairPo;
 import network.nerve.swap.storage.SwapStablePairBalancesStorageService;
@@ -64,11 +60,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -80,7 +74,7 @@ public class StableAddLiquidityHandlerTest {
 
     protected StableAddLiquidityHandler handler;
     protected IPairFactory iPairFactory;
-    protected StableSwapPairCacher stableSwapPairCacher;
+    protected StableSwapPairCache stableSwapPairCache;
     protected Chain chain;
     protected ChainManager chainManager;
     protected NerveToken token0;
@@ -91,18 +85,20 @@ public class StableAddLiquidityHandlerTest {
     protected String createPairTxHash = "c75818aeb1380736810a40a70541373d1cf40e104a0f6d33c68cc441472b3e8f";
     protected byte[] stablePairAddressBytes;
     protected String stablePairAddress;
+    protected int[] decimalsOfCoins;
 
     @Before
     public void init() {
         handler = new StableAddLiquidityHandler();
         iPairFactory = new TemporaryPairFactory();
-        stableSwapPairCacher = new StableSwapPairCacherImpl();
-        SpringLiteContext.putBean(stableSwapPairCacher.getClass().getName(), stableSwapPairCacher);
+        stableSwapPairCache = new StableSwapPairCacheImpl();
+        SpringLiteContext.putBean(stableSwapPairCache.getClass().getName(), stableSwapPairCache);
         int chainId = 5;
         long blockHeight = 20L;
         token0 = new NerveToken(chainId, 1);
         token1 = new NerveToken(chainId, 2);
         tokenLP = new NerveToken(chainId, 3);
+        decimalsOfCoins = new int[]{6, 9};
         stablePairAddressBytes = AddressTool.getAddress(HexUtil.decode(createPairTxHash), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
         stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);
 
@@ -131,7 +127,7 @@ public class StableAddLiquidityHandlerTest {
         BeanUtilTest.setBean(handler, "chainManager", chainManager);
         BeanUtilTest.setBean(handler, "iPairFactory", iPairFactory);
         BeanUtilTest.setBean(iPairFactory, "chainManager", chainManager);
-        BeanUtilTest.setBean(stableSwapPairCacher, "swapStablePairStorageService", new SwapStablePairStorageService() {
+        BeanUtilTest.setBean(stableSwapPairCache, "swapStablePairStorageService", new SwapStablePairStorageService() {
 
             @Override
             public boolean savePair(byte[] address, StableSwapPairPo po) throws Exception {
@@ -148,6 +144,7 @@ public class StableAddLiquidityHandlerTest {
                 StableSwapPairPo po = new StableSwapPairPo(address);
                 po.setTokenLP(tokenLP);
                 po.setCoins(new NerveToken[]{token0, token1});
+                po.setDecimalsOfCoins(decimalsOfCoins);
                 return po;
             }
 
@@ -161,7 +158,7 @@ public class StableAddLiquidityHandlerTest {
                 return true;
             }
         });
-        BeanUtilTest.setBean(stableSwapPairCacher, "swapStablePairBalancesStorageService", new SwapStablePairBalancesStorageService() {
+        BeanUtilTest.setBean(stableSwapPairCache, "swapStablePairBalancesStorageService", new SwapStablePairBalancesStorageService() {
 
             @Override
             public boolean savePairBalances(String address, StableSwapPairBalancesPo dto) throws Exception {
@@ -204,9 +201,9 @@ public class StableAddLiquidityHandlerTest {
         items.add(getCase1());
         JunitUtils.execute(items, executer);
 
-        items.clear();
-        items.add(getCase2());
-        JunitUtils.execute(items, executer);
+        //items.clear();
+        //items.add(getCase2());
+        //JunitUtils.execute(items, executer);
 
     }
 
@@ -220,11 +217,11 @@ public class StableAddLiquidityHandlerTest {
         String from = address20;
         byte[] fromBytes = AddressTool.getAddress(address20);
         LedgerBalance ledgerBalance0 = tempBalanceManager.getBalance(fromBytes, token0.getChainId(), token0.getAssetId()).getData();
-        ledgerBalance0.setBalance(BigInteger.valueOf(200000_00000000L));
+        ledgerBalance0.setBalance(BigInteger.valueOf(20000000_000000L));
         LedgerBalance ledgerBalance1 = tempBalanceManager.getBalance(fromBytes, token1.getChainId(), token1.getAssetId()).getData();
-        ledgerBalance1.setBalance(BigInteger.valueOf(200000_000000L));
+        ledgerBalance1.setBalance(BigInteger.valueOf(20000000_000000000L));
 
-        BigInteger[] amounts = new BigInteger[]{BigInteger.valueOf(200_00000000L), BigInteger.valueOf(200_00000000L)};
+        BigInteger[] amounts = new BigInteger[]{BigInteger.valueOf(30000_000000L), BigInteger.valueOf(20000_000000000L)};
         NerveToken[] tokens = new NerveToken[]{token0, token1};
         long deadline = System.currentTimeMillis() / 1000 + 300;
         byte[] to = AddressTool.getAddress(address21);
@@ -240,7 +237,7 @@ public class StableAddLiquidityHandlerTest {
             public void callback(JunitCase junitCase, SwapResult result) throws Exception {
                 assertNotNull(result);
                 Assert.assertTrue(result.isSuccess());
-                BigInteger liquidity = SwapUtils.getCumulativeAmounts(amounts);
+                BigInteger liquidity = SwapUtils.getCumulativeAmountsOfStableSwap(amounts, decimalsOfCoins);
                 StableAddLiquidityBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), StableAddLiquidityBus.class);
 
                 BigInteger toAddressBalanceLP = tempBalanceManager.getBalance(to, tokenLP.getChainId(), tokenLP.getAssetId()).getData().getBalance();
@@ -276,7 +273,7 @@ public class StableAddLiquidityHandlerTest {
         String from = address20;
         byte[] fromBytes = AddressTool.getAddress(address20);
 
-        BigInteger[] amounts = new BigInteger[]{BigInteger.valueOf(300_00000000L), BigInteger.valueOf(200_00000000L)};
+        BigInteger[] amounts = new BigInteger[]{BigInteger.valueOf(300_000000L), BigInteger.valueOf(200_000000000L)};
         NerveToken[] tokens = new NerveToken[]{token0, token1};
         long deadline = System.currentTimeMillis() / 1000 + 300;
         byte[] to = AddressTool.getAddress(address21);
@@ -297,16 +294,17 @@ public class StableAddLiquidityHandlerTest {
 
                 BigInteger toAddressBalanceLP = tempBalanceManager.getBalance(to, tokenLP.getChainId(), tokenLP.getAssetId()).getData().getBalance();
 
-                Assert.assertEquals("添加前的池子资产0", BigInteger.valueOf(200_00000000L), bus.getBalances()[0]);
-                Assert.assertEquals("添加前的池子资产1", BigInteger.valueOf(200_00000000L), bus.getBalances()[1]);
-                Assert.assertEquals("实际添加的资产0", BigInteger.valueOf(200_00000000L), bus.getRealAmounts()[0]);
-                Assert.assertEquals("实际添加的资产1", BigInteger.valueOf(200_00000000L), bus.getRealAmounts()[1]);
-                Assert.assertEquals("退回的资产0", BigInteger.valueOf(100_00000000L), bus.getRefundAmounts()[0]);
+                Assert.assertEquals("添加前的池子资产0", BigInteger.valueOf(30000_000000L), bus.getBalances()[0]);
+                Assert.assertEquals("添加前的池子资产1", BigInteger.valueOf(20000_000000000L), bus.getBalances()[1]);
+                Assert.assertEquals("实际添加的资产0", BigInteger.valueOf(300_000000L), bus.getRealAmounts()[0]);
+                Assert.assertEquals("实际添加的资产1", BigInteger.valueOf(200_000000000L), bus.getRealAmounts()[1]);
+                Assert.assertEquals("退回的资产0", BigInteger.ZERO, bus.getRefundAmounts()[0]);
                 Assert.assertEquals("退回的资产1", BigInteger.ZERO, bus.getRefundAmounts()[1]);
                 Assert.assertEquals("流动性份额", liquidity, bus.getLiquidity());
                 Assert.assertEquals("用户获得的流动性份额", toAddressBalanceLP.subtract(_toAddressBalanceLP), bus.getLiquidity());
                 Assert.assertEquals("交易hash", tx.getHash().toHex(), result.getHash());
                 Assert.assertEquals("区块高度", header.getHeight(), result.getBlockHeight());
+                System.out.println(String.format("用户总流动性份额: %s", toAddressBalanceLP));
                 System.out.println(String.format("\t系统交易: \n%s", result.getSubTx().format()));
                 System.out.println(String.format("[通过, 描述: %s] Test StableSwap-AddLiquidity tx execute! hash: %s, liquidity: %s", junitCase.getKey(), tx.getHash().toHex(), liquidity));
 

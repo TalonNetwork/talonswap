@@ -70,7 +70,7 @@ public abstract class AbstractStablePair implements IStablePair {
         int length = balances.length;
         BigInteger[] realAmounts = changeBalances;
         BigInteger[] newBalances = new BigInteger[length];
-        for (int i=0;i<length;i++) {
+        for (int i = 0; i < length; i++) {
             newBalances[i] = balances[i].add(realAmounts[i]);
         }
         _update(userAddress, liquidityChange, changeBalances, newBalances, balances, blockHeight, blockTime);
@@ -83,7 +83,7 @@ public abstract class AbstractStablePair implements IStablePair {
         int length = balances.length;
         BigInteger[] realAmounts = changeBalances;
         BigInteger[] newBalances = new BigInteger[length];
-        for (int i=0;i<length;i++) {
+        for (int i = 0; i < length; i++) {
             newBalances[i] = balances[i].add(realAmounts[i]);
         }
         _rollback(userAddress, liquidityChange, changeBalances, newBalances, balances, blockHeight, blockTime);

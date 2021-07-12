@@ -9,7 +9,7 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.logback.NulsLogger;
 import io.nuls.core.model.ArraysTool;
-import network.nerve.swap.cache.FarmCacher;
+import network.nerve.swap.cache.FarmCache;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.manager.FarmTempManager;
 import network.nerve.swap.model.Chain;
@@ -28,7 +28,7 @@ import java.math.BigInteger;
 public class FarmStakeHelper {
 
     @Autowired
-    private FarmCacher farmCacher;
+    private FarmCache farmCache;
 
     @Autowired
     private FarmStorageService storageService;
@@ -48,7 +48,7 @@ public class FarmStakeHelper {
     public ValidaterResult validateTxData(Chain chain, Transaction tx, FarmStakeChangeData data, FarmTempManager farmTempManager) {
         NulsLogger logger = chain.getLogger();
         //验证farm是否存在
-        FarmPoolPO farm = farmCacher.get(data.getFarmHash());
+        FarmPoolPO farm = farmCache.get(data.getFarmHash());
         String farmHash = data.getFarmHash().toHex();
         if (farmTempManager != null && farmTempManager.getFarm(farmHash) != null) {
             farm = farmTempManager.getFarm(farmHash);
@@ -109,8 +109,8 @@ public class FarmStakeHelper {
         return ValidaterResult.getSuccess();
     }
 
-    public void setFarmCacher(FarmCacher farmCacher) {
-        this.farmCacher = farmCacher;
+    public void setFarmCacher(FarmCache farmCache) {
+        this.farmCache = farmCache;
     }
 
     public void setStorageService(FarmStorageService storageService) {

@@ -42,12 +42,14 @@ public interface SwapConstant {
 
     BigInteger BI_1E12 = BigInteger.valueOf(1000000000000L);
     BigInteger BI_100 = BigInteger.valueOf(100);
-    BigInteger BI_100_000 = BigInteger.valueOf(100000);
     BigInteger BI_1000_000 = BigInteger.valueOf(1000000);
     BigInteger BI_1000 = BigInteger.valueOf(1000);
     BigInteger BI_997 = BigInteger.valueOf(997);
+    BigInteger BI_2 = BigInteger.valueOf(2);
     BigInteger BI_3 = BigInteger.valueOf(3);
     BigInteger BI_50 = BigInteger.valueOf(50);
+    BigInteger BI_7 = BigInteger.valueOf(7);
+    BigInteger BI_10 = BigInteger.valueOf(10);
 
 
 }

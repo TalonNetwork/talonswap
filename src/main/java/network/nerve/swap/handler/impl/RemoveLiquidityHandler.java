@@ -34,8 +34,8 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.crypto.HexUtil;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.SwapPairCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.SwapPairCache;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.handler.ISwapInvoker;
 import network.nerve.swap.handler.SwapHandlerConstraints;
@@ -74,9 +74,9 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
     @Autowired
     private ChainManager chainManager;
     @Autowired
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
     @Autowired
-    private LedgerAssetCacher ledgerAssetCacher;
+    private LedgerAssetCache ledgerAssetCache;
 
     @Override
     public Integer txType() {
@@ -103,15 +103,18 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
             if (blockTime > deadline) {
                 throw new NulsException(SwapErrorCode.EXPIRED);
             }
+            if (!AddressTool.validAddress(chainId, txData.getTo())) {
+                throw new NulsException(SwapErrorCode.RECEIVE_ADDRESS_ERROR);
+            }
             NerveToken tokenA = txData.getTokenA();
             NerveToken tokenB = txData.getTokenB();
             // 检查tokenA,B是否存在，pair地址是否合法
-            LedgerAssetDTO assetA = ledgerAssetCacher.getLedgerAsset(tokenA);
-            LedgerAssetDTO assetB = ledgerAssetCacher.getLedgerAsset(tokenB);
+            LedgerAssetDTO assetA = ledgerAssetCache.getLedgerAsset(tokenA);
+            LedgerAssetDTO assetB = ledgerAssetCache.getLedgerAsset(tokenB);
             if (assetA == null || assetB == null) {
                 throw new NulsException(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
             }
-            if (!swapPairCacher.isExist(AddressTool.getStringAddressByBytes(dto.getPairAddress()))) {
+            if (!swapPairCache.isExist(AddressTool.getStringAddressByBytes(dto.getPairAddress()))) {
                 throw new NulsException(SwapErrorCode.PAIR_NOT_EXIST);
             }
             if (!Arrays.equals(SwapUtils.getPairAddress(chainId, tokenA, tokenB), dto.getPairAddress())) {
@@ -236,6 +239,9 @@ public class RemoveLiquidityHandler extends SwapHandlerConstraints {
             throw new NulsException(SwapErrorCode.REMOVE_LIQUIDITY_FROMS_ERROR);
         }
         CoinFrom from = froms.get(0);
+        if (!from.getAmount().equals(to.getAmount())) {
+            throw new NulsException(SwapErrorCode.INVALID_AMOUNTS);
+        }
         byte[] userAddress = from.getAddress();
         return new RemoveLiquidityDTO(userAddress, pairAddress, to.getAmount());
     }

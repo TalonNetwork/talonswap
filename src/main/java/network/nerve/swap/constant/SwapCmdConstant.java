@@ -44,6 +44,7 @@ public interface SwapCmdConstant {
     String SWAP_MIN_AMOUNT_REMOVE_LIQUIDITY = "sw_swap_min_amount_remove_liquidity";
     String SWAP_MIN_AMOUNT_TOKEN_TRADE = "sw_swap_min_amount_token_trade";
     String SWAP_PAIR_INFO = "sw_swap_pair_info";
+    String SWAP_PAIR_INFO_BY_ADDRESS = "sw_swap_pair_info_by_address";
     String SWAP_PAIR_BY_LP = "sw_swap_pair_by_lp";
 
     String STABLE_SWAP_CREATE_PAIR = "sw_stable_swap_create_pair";

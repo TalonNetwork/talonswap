@@ -38,9 +38,9 @@ import io.nuls.core.log.Log;
 import io.nuls.core.log.logback.NulsLogger;
 import io.nuls.core.model.StringUtils;
 import io.nuls.core.rpc.util.NulsDateUtils;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.StableSwapPairCacher;
-import network.nerve.swap.cache.SwapPairCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.StableSwapPairCache;
+import network.nerve.swap.cache.SwapPairCache;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.handler.SwapInvoker;
@@ -92,11 +92,11 @@ public class SwapServiceImpl implements SwapService {
     @Autowired
     private LedgerService ledgerService;
     @Autowired
-    private LedgerAssetCacher ledgerAssetCacher;
+    private LedgerAssetCache ledgerAssetCache;
     @Autowired
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
     @Autowired
-    private StableSwapPairCacher stableSwapPairCacher;
+    private StableSwapPairCache stableSwapPairCache;
 
     @Override
     public Result begin(int chainId, long blockHeight, long blockTime, String preStateRoot) {
@@ -221,7 +221,7 @@ public class SwapServiceImpl implements SwapService {
         // 简单检查交易业务
         NerveToken _tokenA = SwapUtils.parseTokenStr(tokenA);
         NerveToken _tokenB = SwapUtils.parseTokenStr(tokenB);
-        if (ledgerAssetCacher.getLedgerAsset(_tokenA) == null || ledgerAssetCacher.getLedgerAsset(_tokenB) == null) {
+        if (ledgerAssetCache.getLedgerAsset(_tokenA) == null || ledgerAssetCache.getLedgerAsset(_tokenB) == null) {
             logger.warn("资产类型不正确");
             return Result.getFailed(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
         }
@@ -270,17 +270,19 @@ public class SwapServiceImpl implements SwapService {
         }
         NerveToken _tokenA = SwapUtils.parseTokenStr(tokenA);
         NerveToken _tokenB = SwapUtils.parseTokenStr(tokenB);
-        if (ledgerAssetCacher.getLedgerAsset(_tokenA) == null || ledgerAssetCacher.getLedgerAsset(_tokenB) == null) {
+        if (ledgerAssetCache.getLedgerAsset(_tokenA) == null || ledgerAssetCache.getLedgerAsset(_tokenB) == null) {
             logger.warn("资产类型不正确");
             return Result.getFailed(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
         }
         byte[] pairAddress = SwapUtils.getPairAddress(chainId, _tokenA, _tokenB);
-        if (!swapPairCacher.isExist(AddressTool.getStringAddressByBytes(pairAddress))) {
+        if (!swapPairCache.isExist(AddressTool.getStringAddressByBytes(pairAddress))) {
             logger.warn("交易对地址不存在");
             return Result.getFailed(SwapErrorCode.PAIR_NOT_EXIST);
         }
         // 组装交易
         AddLiquidityData data = new AddLiquidityData();
+        data.setTokenA(_tokenA);
+        data.setTokenB(_tokenB);
         data.setTo(AddressTool.getAddress(to));
         data.setDeadline(deadline);
         data.setAmountAMin(amountAMin);
@@ -331,12 +333,12 @@ public class SwapServiceImpl implements SwapService {
         NerveToken _tokenA = SwapUtils.parseTokenStr(tokenA);
         NerveToken _tokenB = SwapUtils.parseTokenStr(tokenB);
         NerveToken _tokenLP = SwapUtils.parseTokenStr(tokenLP);
-        if (ledgerAssetCacher.getLedgerAsset(_tokenA) == null || ledgerAssetCacher.getLedgerAsset(_tokenB) == null || ledgerAssetCacher.getLedgerAsset(_tokenLP) == null) {
+        if (ledgerAssetCache.getLedgerAsset(_tokenA) == null || ledgerAssetCache.getLedgerAsset(_tokenB) == null || ledgerAssetCache.getLedgerAsset(_tokenLP) == null) {
             logger.warn("资产类型不正确");
             return Result.getFailed(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
         }
         byte[] pairAddress = SwapUtils.getPairAddress(chainId, _tokenA, _tokenB);
-        if (!swapPairCacher.isExist(AddressTool.getStringAddressByBytes(pairAddress))) {
+        if (!swapPairCache.isExist(AddressTool.getStringAddressByBytes(pairAddress))) {
             logger.warn("交易对地址不存在");
             return Result.getFailed(SwapErrorCode.PAIR_NOT_EXIST);
         }
@@ -395,13 +397,13 @@ public class SwapServiceImpl implements SwapService {
             _tokenPath[i] = SwapUtils.parseTokenStr(tokenPath[i]);
         }
         for (NerveToken token : _tokenPath) {
-            if (ledgerAssetCacher.getLedgerAsset(token) == null) {
+            if (ledgerAssetCache.getLedgerAsset(token) == null) {
                 logger.warn("资产类型不正确");
                 return Result.getFailed(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
             }
         }
         byte[] firstPairAddress = SwapUtils.getPairAddress(chainId, _tokenPath[0], _tokenPath[1]);
-        if (!swapPairCacher.isExist(AddressTool.getStringAddressByBytes(firstPairAddress))) {
+        if (!swapPairCache.isExist(AddressTool.getStringAddressByBytes(firstPairAddress))) {
             logger.warn("交易对地址不存在");
             return Result.getFailed(SwapErrorCode.PAIR_NOT_EXIST);
         }
@@ -452,7 +454,7 @@ public class SwapServiceImpl implements SwapService {
             _coins[i] = SwapUtils.parseTokenStr(coins[i]);
         }
         for (NerveToken token : _coins) {
-            if (ledgerAssetCacher.getLedgerAsset(token) == null) {
+            if (ledgerAssetCache.getLedgerAsset(token) == null) {
                 logger.warn("资产类型不正确");
                 return Result.getFailed(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
             }
@@ -505,14 +507,14 @@ public class SwapServiceImpl implements SwapService {
             _tokens[i] = SwapUtils.parseTokenStr(tokens[i]);
         }
         for (NerveToken token : _tokens) {
-            if (ledgerAssetCacher.getLedgerAsset(token) == null) {
+            if (ledgerAssetCache.getLedgerAsset(token) == null) {
                 logger.warn("资产类型不正确");
                 return Result.getFailed(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
             }
         }
 
         byte[] pairAddressBytes = AddressTool.getAddress(pairAddress);
-        if (!stableSwapPairCacher.isExist(pairAddress)) {
+        if (!stableSwapPairCache.isExist(pairAddress)) {
             logger.warn("交易对地址不存在");
             return Result.getFailed(SwapErrorCode.PAIR_NOT_EXIST);
         }
@@ -559,12 +561,12 @@ public class SwapServiceImpl implements SwapService {
             return Result.getFailed(SwapErrorCode.EXPIRED);
         }
         NerveToken _tokenLP = SwapUtils.parseTokenStr(tokenLP);
-        if (ledgerAssetCacher.getLedgerAsset(_tokenLP) == null) {
+        if (ledgerAssetCache.getLedgerAsset(_tokenLP) == null) {
             logger.warn("资产类型不正确");
             return Result.getFailed(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
         }
         byte[] pairAddressBytes = AddressTool.getAddress(pairAddress);
-        if (!stableSwapPairCacher.isExist(pairAddress)) {
+        if (!stableSwapPairCache.isExist(pairAddress)) {
             logger.warn("交易对地址不存在");
             return Result.getFailed(SwapErrorCode.PAIR_NOT_EXIST);
         }
@@ -622,14 +624,14 @@ public class SwapServiceImpl implements SwapService {
             _tokensIn[i] = SwapUtils.parseTokenStr(tokensIn[i]);
         }
         for (NerveToken tokenIn : _tokensIn) {
-            if (ledgerAssetCacher.getLedgerAsset(tokenIn) == null) {
+            if (ledgerAssetCache.getLedgerAsset(tokenIn) == null) {
                 logger.warn("资产类型不正确");
                 return Result.getFailed(SwapErrorCode.LEDGER_ASSET_NOT_EXIST);
             }
         }
 
         byte[] pairAddressBytes = AddressTool.getAddress(pairAddress);
-        if (!stableSwapPairCacher.isExist(pairAddress)) {
+        if (!stableSwapPairCache.isExist(pairAddress)) {
             logger.warn("交易对地址不存在");
             return Result.getFailed(SwapErrorCode.PAIR_NOT_EXIST);
         }
@@ -667,9 +669,9 @@ public class SwapServiceImpl implements SwapService {
 
     @Override
     public Result<String> getPairAddressByTokenLP(int chainId, String tokenLP) {
-        String address = swapPairCacher.getPairAddressByTokenLP(chainId, SwapUtils.parseTokenStr(tokenLP));
+        String address = swapPairCache.getPairAddressByTokenLP(chainId, SwapUtils.parseTokenStr(tokenLP));
         if (StringUtils.isBlank(address)) {
-            address = stableSwapPairCacher.getPairAddressByTokenLP(chainId, SwapUtils.parseTokenStr(tokenLP));
+            address = stableSwapPairCache.getPairAddressByTokenLP(chainId, SwapUtils.parseTokenStr(tokenLP));
             if (StringUtils.isBlank(address)) {
                 return Result.getFailed(SwapErrorCode.DATA_NOT_FOUND);
             }

@@ -12,8 +12,8 @@ import io.nuls.core.crypto.HexUtil;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
 import io.nuls.core.log.logback.NulsLogger;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.SwapPairCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.SwapPairCache;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.handler.impl.RemoveLiquidityHandler;
@@ -49,9 +49,9 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
     @Autowired
     private RemoveLiquidityHandler removeLiquidityHandler;
     @Autowired
-    private LedgerAssetCacher ledgerAssetCacher;
+    private LedgerAssetCache ledgerAssetCache;
     @Autowired
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
 
     @Override
     public int getType() {
@@ -101,12 +101,18 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
                 errorCode = SwapErrorCode.EXPIRED.getCode();
                 continue;
             }
+            if (!AddressTool.validAddress(chainId, txData.getTo())) {
+                logger.error("RECEIVE_ADDRESS_ERROR! hash-{}", tx.getHash().toHex());
+                failsList.add(tx);
+                errorCode = SwapErrorCode.RECEIVE_ADDRESS_ERROR.getCode();
+                continue;
+            }
             NerveToken tokenA = txData.getTokenA();
             NerveToken tokenB = txData.getTokenB();
 
             // 检查tokenA,B是否存在，pair地址是否合法
-            LedgerAssetDTO assetA = ledgerAssetCacher.getLedgerAsset(tokenA);
-            LedgerAssetDTO assetB = ledgerAssetCacher.getLedgerAsset(tokenB);
+            LedgerAssetDTO assetA = ledgerAssetCache.getLedgerAsset(tokenA);
+            LedgerAssetDTO assetB = ledgerAssetCache.getLedgerAsset(tokenB);
             if (assetA == null || assetB == null) {
                 logger.error("Ledger asset not exist! hash-{}", tx.getHash().toHex());
                 failsList.add(tx);
@@ -119,7 +125,7 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
             try {
                 coinData = tx.getCoinDataInstance();
                 dto = removeLiquidityHandler.getRemoveLiquidityInfo(chainId, coinData);
-                if (!swapPairCacher.isExist(AddressTool.getStringAddressByBytes(dto.getPairAddress()))) {
+                if (!swapPairCache.isExist(AddressTool.getStringAddressByBytes(dto.getPairAddress()))) {
                     logger.error("PAIR_NOT_EXIST! hash-{}", tx.getHash().toHex());
                     failsList.add(tx);
                     errorCode = SwapErrorCode.PAIR_NOT_EXIST.getCode();
@@ -156,10 +162,12 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
             NulsLogger logger = chain.getLogger();
             Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
+                logger.info("[commit] Swap Remove Liquidity, hash: {}", tx.getHash().toHex());
                 // 从执行结果中提取业务数据
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 CoinData coinData = tx.getCoinDataInstance();
                 IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(coinData.getTo().get(0).getAddress()));
@@ -167,8 +175,6 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
 
                 // 更新Pair的资金池和发行总量
                 pair.update(bus.getLiquidity().negate(), bus.getReserve0().subtract(bus.getAmount0()), bus.getReserve1().subtract(bus.getAmount1()), bus.getReserve0(), bus.getReserve1(), blockHeader.getHeight(), blockHeader.getTime());
-                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
-                logger.info("[commit] Swap Remove Liquidity, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -189,10 +195,10 @@ public class RemoveLiquidityTxProcessor implements TransactionProcessor {
             for (Transaction tx : txs) {
                 SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    return true;
+                    continue;
                 }
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 CoinData coinData = tx.getCoinDataInstance();
                 IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(coinData.getTo().get(0).getAddress()));

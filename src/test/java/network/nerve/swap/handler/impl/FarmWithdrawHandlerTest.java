@@ -15,7 +15,7 @@ import io.nuls.core.rpc.model.ModuleE;
 import network.nerve.swap.JunitCase;
 import network.nerve.swap.JunitExecuter;
 import network.nerve.swap.JunitUtils;
-import network.nerve.swap.cache.impl.FarmCacherImpl;
+import network.nerve.swap.cache.impl.FarmCacheImpl;
 import network.nerve.swap.config.ConfigBean;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.manager.ChainManager;
@@ -52,7 +52,7 @@ import static org.junit.Assert.*;
  */
 public class FarmWithdrawHandlerTest {
     private FarmWithdrawHandler handler;
-    private FarmCacherImpl farmCacher;
+    private FarmCacheImpl farmCacher;
     private Chain chain;
     private static String prikeyHex = "2d57d35e370cffda76cada1f478aa877292be096be9a548c799e3f826564c2aa";
     private FarmUserInfoStorageService userInfoStorageService;
@@ -74,7 +74,7 @@ public class FarmWithdrawHandlerTest {
         chain.setConfig(cfg);
         chainManager.getChainMap().put(9, chain);
         handler.setChainManager(chainManager);
-        this.farmCacher = new FarmCacherImpl();
+        this.farmCacher = new FarmCacheImpl();
         handler.setFarmCacher(farmCacher);
         handler.getHelper().setFarmCacher(farmCacher);
 //        handler.getHelper().setLedgerService(new LedgerService() {

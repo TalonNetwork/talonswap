@@ -6,6 +6,7 @@ import io.nuls.base.data.Address;
 import io.nuls.base.data.BaseNulsData;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.parse.SerializeUtils;
+import network.nerve.swap.model.NerveToken;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -15,6 +16,8 @@ import java.math.BigInteger;
  */
 public class AddLiquidityData extends BaseNulsData {
 
+    private NerveToken tokenA;
+    private NerveToken tokenB;
     private byte[] to;
     private long deadline;
     private BigInteger amountAMin;
@@ -22,6 +25,8 @@ public class AddLiquidityData extends BaseNulsData {
 
     @Override
     protected void serializeToStream(NulsOutputStreamBuffer stream) throws IOException {
+        stream.writeNulsData(tokenA);
+        stream.writeNulsData(tokenB);
         stream.write(to);
         stream.writeUint32(deadline);
         stream.writeBigInteger(amountAMin);
@@ -30,6 +35,8 @@ public class AddLiquidityData extends BaseNulsData {
 
     @Override
     public void parse(NulsByteBuffer byteBuffer) throws NulsException {
+        this.tokenA = byteBuffer.readNulsData(new NerveToken());
+        this.tokenB = byteBuffer.readNulsData(new NerveToken());
         this.to = byteBuffer.readBytes(Address.ADDRESS_LENGTH);
         this.deadline = byteBuffer.readUint32();
         this.amountAMin = byteBuffer.readBigInteger();
@@ -39,11 +46,29 @@ public class AddLiquidityData extends BaseNulsData {
     @Override
     public int size() {
         int size = 0;
+        size += tokenA.size();
+        size += tokenB.size();
         size += Address.ADDRESS_LENGTH;
         size += SerializeUtils.sizeOfUint32();
         size += SerializeUtils.sizeOfBigInteger();
         size += SerializeUtils.sizeOfBigInteger();
         return size;
+    }
+
+    public NerveToken getTokenA() {
+        return tokenA;
+    }
+
+    public void setTokenA(NerveToken tokenA) {
+        this.tokenA = tokenA;
+    }
+
+    public NerveToken getTokenB() {
+        return tokenB;
+    }
+
+    public void setTokenB(NerveToken tokenB) {
+        this.tokenB = tokenB;
     }
 
     public byte[] getTo() {

@@ -12,8 +12,8 @@ import io.nuls.core.parse.JSONUtils;
 import io.nuls.core.rpc.cmd.BaseCmd;
 import io.nuls.core.rpc.model.*;
 import io.nuls.core.rpc.model.message.Response;
-import network.nerve.swap.cache.StableSwapPairCacher;
-import network.nerve.swap.cache.SwapPairCacher;
+import network.nerve.swap.cache.StableSwapPairCache;
+import network.nerve.swap.cache.SwapPairCache;
 import network.nerve.swap.config.SwapConfig;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.context.SwapContext;
@@ -30,6 +30,7 @@ import network.nerve.swap.model.dto.SwapPairDTO;
 import network.nerve.swap.model.dto.stable.StableSwapPairDTO;
 import network.nerve.swap.model.vo.RouteVO;
 import network.nerve.swap.model.vo.SwapPairVO;
+import network.nerve.swap.model.vo.TokenAmountVo;
 import network.nerve.swap.service.SwapService;
 import network.nerve.swap.storage.SwapExecuteResultStorageService;
 import network.nerve.swap.utils.SwapUtils;
@@ -65,9 +66,9 @@ public class SwapCmd extends BaseCmd {
     @Autowired("PersistencePairFactory")
     private IPairFactory iPairFactory;
     @Autowired
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
     @Autowired
-    private StableSwapPairCacher stableSwapPairCacher;
+    private StableSwapPairCache stableSwapPairCache;
     @Autowired
     private SwapExecuteResultStorageService swapExecuteResultStorageService;
 
@@ -185,6 +186,7 @@ public class SwapCmd extends BaseCmd {
             String stablePairAddress = (String) params.get("stablePairAddress");
             Integer assetChainId = Integer.parseInt(params.get("assetChainId").toString());
             Integer assetId = Integer.parseInt(params.get("assetId").toString());
+            logger().debug("chainId: {}, stablePairAddress: {}, assetChainId: {}, assetId: {},", chainId, stablePairAddress, assetChainId, assetId);
             boolean legalCoin = stableSwapHelper.isLegalCoinForAddStable(chainId, stablePairAddress, assetChainId, assetId);
             Map<String, Object> resultData = new HashMap<>();
             resultData.put("value", legalCoin);
@@ -231,7 +233,9 @@ public class SwapCmd extends BaseCmd {
             @Parameter(parameterName = "pairs", requestType = @TypeDescriptor(value = String[].class), parameterDes = "当前网络所有交易对列表")
     })
     @ResponseData(name = "返回值", description = "返回一个Map对象", responseType = @TypeDescriptor(value = Map.class, mapKeys = {
-            @Key(name = "value", valueType = RouteVO.class, description = "最佳交易路径")
+            @Key(name = "tokenPath", valueType = List.class, description = "最佳交易路径"),
+            @Key(name = "tokenAmountIn", valueType = TokenAmountVo.class, description = "卖出资产"),
+            @Key(name = "tokenAmountOut", valueType = TokenAmountVo.class, description = "买进资产"),
     }))
     public Response bestTradeExactIn(Map<String, Object> params) {
         try {
@@ -247,8 +251,7 @@ public class SwapCmd extends BaseCmd {
             if (bestTrades == null || bestTrades.isEmpty()) {
                 return failed(SwapErrorCode.DATA_NOT_FOUND);
             }
-            Map<String, Object> resultData = new HashMap<>();
-            resultData.put("value", this.makeBestTradeExactIn(bestTrades.get(0)));
+            Map<String, Object> resultData = this.makeBestTradeExactIn(bestTrades.get(0));
             return success(resultData);
         } catch (Exception e) {
             logger().error(e);
@@ -262,15 +265,14 @@ public class SwapCmd extends BaseCmd {
         TokenAmount tokenAmountIn = routeVO.getTokenAmountIn();
         List<String> tokenPath = new ArrayList<>();
         NerveToken in = tokenAmountIn.getToken();
+        tokenPath.add(in.str());
         for (SwapPairVO vo : path) {
             NerveToken token0 = vo.getToken0();
             NerveToken token1 = vo.getToken1();
             if (in.equals(token0)) {
-                tokenPath.add(token0.str());
                 tokenPath.add(token1.str());
                 in = token1;
             } else {
-                tokenPath.add(token1.str());
                 tokenPath.add(token0.str());
                 in = token0;
             }
@@ -360,7 +362,7 @@ public class SwapCmd extends BaseCmd {
             @Parameter(parameterName = "amountAMin", parameterType = "String", parameterDes = "资产A最小移除值"),
             @Parameter(parameterName = "amountBMin", parameterType = "String", parameterDes = "资产B最小移除值"),
             @Parameter(parameterName = "deadline", parameterType = "long", parameterDes = "过期时间"),
-            @Parameter(parameterName = "to", parameterType = "String", parameterDes = "资产接收地址")
+            @Parameter(parameterName = "to", parameterType = "String", parameterDes = "移除流动性份额接收地址")
     })
     @ResponseData(description = "交易hash")
     public Response swapRemoveLiquidity(Map<String, Object> params) {
@@ -501,7 +503,7 @@ public class SwapCmd extends BaseCmd {
             @Parameter(parameterName = "receiveOrderIndexs", parameterType = "int[]", parameterDes = "按币种索引顺序接收资产"),
             @Parameter(parameterName = "pairAddress", parameterType = "String", parameterDes = "交易对地址"),
             @Parameter(parameterName = "deadline", parameterType = "long", parameterDes = "过期时间"),
-            @Parameter(parameterName = "to", parameterType = "String", parameterDes = "资产接收地址")
+            @Parameter(parameterName = "to", parameterType = "String", parameterDes = "移除流动性份额接收地址")
     })
     @ResponseData(description = "交易hash")
     public Response stableSwapRemoveLiquidity(Map<String, Object> params) {
@@ -597,8 +599,8 @@ public class SwapCmd extends BaseCmd {
                 return failed(SwapErrorCode.DATA_ERROR);
             }
             Map<String, Object> resultData = new HashMap<>();
-            resultData.put("amountAMin", dto.getRealAddLiquidityA());
-            resultData.put("amountBMin", dto.getRealAddLiquidityB());
+            resultData.put("amountAMin", dto.getRealAmountA());
+            resultData.put("amountBMin", dto.getRealAmountB());
             return success(resultData);
         } catch (Exception e) {
             logger().error(e);
@@ -614,8 +616,8 @@ public class SwapCmd extends BaseCmd {
             @Parameter(parameterName = "tokenBStr", parameterType = "String", parameterDes = "资产B的类型，示例：1-1")
     })
     @ResponseData(name = "返回值", description = "返回一个Map对象", responseType = @TypeDescriptor(value = Map.class, mapKeys = {
-            @Key(name = "amountAMin", valueType = String.class, description = "资产A最小添加值"),
-            @Key(name = "amountBMin", valueType = String.class, description = "资产B最小添加值")
+            @Key(name = "amountAMin", valueType = String.class, description = "资产A最小移除值"),
+            @Key(name = "amountBMin", valueType = String.class, description = "资产B最小移除值")
     }))
     public Response calMinAmountOnSwapRemoveLiquidity(Map<String, Object> params) {
         try {
@@ -666,9 +668,13 @@ public class SwapCmd extends BaseCmd {
             List<String> tokenPathList = (List<String>) params.get("tokenPath");
             String[] tokenPath = tokenPathList.toArray(new String[tokenPathList.size()]);
             NerveToken[] path = new NerveToken[tokenPath.length];
+            int i = 0;
+            for (String tokenStr : tokenPathList) {
+                path[i++] = SwapUtils.parseTokenStr(tokenStr);
+            }
             BigInteger[] amountOutMin = SwapUtils.getAmountsOut(chainId, iPairFactory, amountIn, path);
             Map<String, Object> resultData = new HashMap<>();
-            resultData.put("amountOutMin", amountOutMin);
+            resultData.put("amountOutMin", amountOutMin[amountOutMin.length - 1]);
             return success(resultData);
         } catch (Exception e) {
             logger().error(e);
@@ -682,9 +688,7 @@ public class SwapCmd extends BaseCmd {
             @Parameter(parameterName = "tokenAStr", parameterType = "String", parameterDes = "资产A的类型，示例：1-1"),
             @Parameter(parameterName = "tokenBStr", parameterType = "String", parameterDes = "资产B的类型，示例：1-1")
     })
-    @ResponseData(name = "返回值", description = "返回一个Map对象", responseType = @TypeDescriptor(value = Map.class, mapKeys = {
-            @Key(name = "value", valueType = SwapPairDTO.class, description = "交易对信息")
-    }))
+    @ResponseData(name = "返回值", description = "返回一个Map对象", responseType = @TypeDescriptor(value = SwapPairDTO.class))
     public Response getSwapPairInfo(Map<String, Object> params) {
         try {
             Integer chainId = (Integer) params.get("chainId");
@@ -693,13 +697,37 @@ public class SwapCmd extends BaseCmd {
             NerveToken tokenA = SwapUtils.parseTokenStr(tokenAStr);
             NerveToken tokenB = SwapUtils.parseTokenStr(tokenBStr);
             String pairAddress = SwapUtils.getStringPairAddress(chainId, tokenA, tokenB);
-            SwapPairDTO pairDTO = swapPairCacher.get(pairAddress);
+            SwapPairDTO pairDTO = swapPairCache.get(pairAddress);
             if (pairDTO == null) {
                 return failed(SwapErrorCode.DATA_NOT_FOUND);
             }
 
-            Map<String, Object> resultData = new HashMap<>();
-            resultData.put("value", JSONUtils.jsonToMap(pairDTO.toString()));
+            Map<String, Object> resultData = JSONUtils.jsonToMap(pairDTO.toString());
+            return success(resultData);
+        } catch (Exception e) {
+            logger().error(e);
+            return failed(e.getMessage());
+        }
+    }
+
+    @CmdAnnotation(cmd = SWAP_PAIR_INFO_BY_ADDRESS, version = 1.0, description = "根据交易对地址 查询Swap交易对信息")
+    @Parameters(value = {
+            @Parameter(parameterName = "chainId", parameterType = "int", parameterDes = "链id"),
+            @Parameter(parameterName = "pairAddress", parameterType = "String", parameterDes = "交易对地址")
+    })
+    @ResponseData(name = "返回值", description = "返回一个Map对象", responseType = @TypeDescriptor(value = Map.class, mapKeys = {
+            @Key(name = "value", valueType = SwapPairDTO.class, description = "交易对信息")
+    }))
+    public Response getSwapPairInfoByPairAddress(Map<String, Object> params) {
+        try {
+            Integer chainId = (Integer) params.get("chainId");
+            String pairAddress = (String) params.get("pairAddress");
+            SwapPairDTO pairDTO = swapPairCache.get(pairAddress);
+            if (pairDTO == null) {
+                return failed(SwapErrorCode.DATA_NOT_FOUND);
+            }
+
+            Map<String, Object> resultData = JSONUtils.jsonToMap(pairDTO.toString());
             return success(resultData);
         } catch (Exception e) {
             logger().error(e);
@@ -719,13 +747,11 @@ public class SwapCmd extends BaseCmd {
         try {
             Integer chainId = (Integer) params.get("chainId");
             String pairAddress = (String) params.get("pairAddress");
-            StableSwapPairDTO pairDTO = stableSwapPairCacher.get(pairAddress);
+            StableSwapPairDTO pairDTO = stableSwapPairCache.get(pairAddress);
             if (pairDTO == null) {
                 return failed(SwapErrorCode.DATA_NOT_FOUND);
             }
-
-            Map<String, Object> resultData = new HashMap<>();
-            resultData.put("value", JSONUtils.jsonToMap(pairDTO.toString()));
+            Map<String, Object> resultData = JSONUtils.jsonToMap(pairDTO.toString());
             return success(resultData);
         } catch (Exception e) {
             logger().error(e);
@@ -749,7 +775,6 @@ public class SwapCmd extends BaseCmd {
             if (result == null) {
                 return failed(SwapErrorCode.DATA_NOT_FOUND);
             }
-
             Map<String, Object> resultData = new HashMap<>();
             resultData.put("value", result);
             return success(resultData);

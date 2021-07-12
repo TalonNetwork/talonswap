@@ -36,7 +36,7 @@ import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.logback.NulsLogger;
 import io.nuls.core.model.StringUtils;
 import io.nuls.core.rpc.util.NulsDateUtils;
-import network.nerve.swap.cache.FarmCacher;
+import network.nerve.swap.cache.FarmCache;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.manager.ChainManager;
@@ -73,7 +73,7 @@ public class FarmServiceImpl implements FarmService {
     @Autowired
     private ChainManager chainManager;
     @Autowired
-    private FarmCacher farmCacher;
+    private FarmCache farmCache;
     @Autowired
     private FarmUserInfoStorageService userInfoStorageService;
     @Autowired
@@ -107,8 +107,8 @@ public class FarmServiceImpl implements FarmService {
         if (stakeToken == null) {
             return Result.getFailed(SwapErrorCode.FARM_TOKEN_ERROR);
         }
-        LedgerAssetDTO ledgerAssetDTO = ledgerService.getNerveAsset(chainId, stakeToken.getChainId(), stakeToken.getAssetId());
-        if (ledgerAssetDTO == null) {
+        LedgerAssetDTO stakeAssetInfo = ledgerService.getNerveAsset(chainId, stakeToken.getChainId(), stakeToken.getAssetId());
+        if (stakeAssetInfo == null) {
             logger.warn("质押资产类型不正确");
             return Result.getFailed(SwapErrorCode.FARM_TOKEN_ERROR);
         }
@@ -116,18 +116,13 @@ public class FarmServiceImpl implements FarmService {
         if (syrupToken == null) {
             return Result.getFailed(SwapErrorCode.FARM_TOKEN_ERROR);
         }
-        try {
-            if (!ledgerService.existNerveAsset(chainId, syrupToken.getChainId(), syrupToken.getAssetId())) {
-                logger.warn("糖果资产类型不正确");
-                return Result.getFailed(SwapErrorCode.FARM_TOKEN_ERROR);
-            }
-        } catch (NulsException e) {
-            logger.error(e);
-            return Result.getFailed(e.getErrorCode());
+        LedgerAssetDTO syrupAssetInfo = ledgerService.getNerveAsset(chainId, syrupToken.getChainId(), syrupToken.getAssetId());
+        if (syrupAssetInfo == null) {
+            logger.warn("糖果资产类型不正确");
+            return Result.getFailed(SwapErrorCode.FARM_TOKEN_ERROR);
         }
-
-        BigInteger realSyrupPerBlock = BigDecimal.valueOf(syrupPerBlock).movePointRight(ledgerAssetDTO.getDecimalPlace()).toBigInteger();
-        BigInteger realTotalSyrupAmount = BigDecimal.valueOf(totalSyrupAmount).movePointRight(ledgerAssetDTO.getDecimalPlace()).toBigInteger();
+        BigInteger realSyrupPerBlock = BigDecimal.valueOf(syrupPerBlock).movePointRight(syrupAssetInfo.getDecimalPlace()).toBigInteger();
+        BigInteger realTotalSyrupAmount = BigDecimal.valueOf(totalSyrupAmount).movePointRight(syrupAssetInfo.getDecimalPlace()).toBigInteger();
 
         // 验证每个区块奖励数额区间正确
         if (realSyrupPerBlock.compareTo(BigInteger.ZERO) <= 0) {
@@ -214,7 +209,7 @@ public class FarmServiceImpl implements FarmService {
             return Result.getFailed(SwapErrorCode.ACCOUNT_VALID_ERROR);
         }
 
-        FarmPoolPO farm = farmCacher.get(NulsHash.fromHex(farmHash));
+        FarmPoolPO farm = farmCache.get(NulsHash.fromHex(farmHash));
         if (null == farm) {
             return Result.getFailed(SwapErrorCode.FARM_NOT_EXIST);
         }
@@ -284,7 +279,7 @@ public class FarmServiceImpl implements FarmService {
         if (chain == null) {
             return Result.getFailed(SwapErrorCode.CHAIN_NOT_EXIST);
         }
-        FarmPoolPO farm = farmCacher.get(NulsHash.fromHex(farmHash));
+        FarmPoolPO farm = farmCache.get(NulsHash.fromHex(farmHash));
         if (null == farm) {
             return Result.getFailed(SwapErrorCode.FARM_NOT_EXIST);
         }
@@ -363,7 +358,7 @@ public class FarmServiceImpl implements FarmService {
 
     @Override
     public Result<FarmInfoDTO> farmInfo(String farmHash) {
-        FarmPoolPO farm = farmCacher.get(NulsHash.fromHex(farmHash));
+        FarmPoolPO farm = farmCache.get(NulsHash.fromHex(farmHash));
         if (null == farm) {
             return Result.getFailed(SwapErrorCode.FARM_NOT_EXIST);
         }
@@ -382,7 +377,7 @@ public class FarmServiceImpl implements FarmService {
 
     @Override
     public Result<FarmUserInfoDTO> farmUserInfo(String farmHash, String userAddress) {
-        FarmPoolPO farm = farmCacher.get(NulsHash.fromHex(farmHash));
+        FarmPoolPO farm = farmCache.get(NulsHash.fromHex(farmHash));
         if (null == farm) {
             return Result.getFailed(SwapErrorCode.FARM_NOT_EXIST);
         }

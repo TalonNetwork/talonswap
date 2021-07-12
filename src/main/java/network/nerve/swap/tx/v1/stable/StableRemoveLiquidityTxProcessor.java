@@ -115,10 +115,12 @@ public class StableRemoveLiquidityTxProcessor implements TransactionProcessor {
             NulsLogger logger = chain.getLogger();
             Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
+                logger.info("[commit] Stable Swap Remove Liquidity, hash: {}", tx.getHash().toHex());
                 // 从执行结果中提取业务数据
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 CoinData coinData = tx.getCoinDataInstance();
                 StableRemoveLiquidityDTO dto = stableRemoveLiquidityHandler.getStableRemoveLiquidityInfo(chainId, coinData);
@@ -127,8 +129,6 @@ public class StableRemoveLiquidityTxProcessor implements TransactionProcessor {
                 StableRemoveLiquidityBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), StableRemoveLiquidityBus.class);
                 // 更新Pair的资金池和发行总量
                 stablePair.update(dto.getUserAddress(), bus.getLiquidity().negate(), SwapUtils.convertNegate(bus.getAmounts()), bus.getBalances(), blockHeader.getHeight(), blockHeader.getTime());
-                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
-                logger.info("[commit] Stable Swap Remove Liquidity, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -149,10 +149,10 @@ public class StableRemoveLiquidityTxProcessor implements TransactionProcessor {
             for (Transaction tx : txs) {
                 SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    return true;
+                    continue;
                 }
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 CoinData coinData = tx.getCoinDataInstance();
                 StableRemoveLiquidityDTO dto = stableRemoveLiquidityHandler.getStableRemoveLiquidityInfo(chainId, coinData);

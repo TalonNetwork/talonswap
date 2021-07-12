@@ -72,6 +72,10 @@ public interface SwapErrorCode extends CommonCodeConstanst {
     ErrorCode SWAP_TRADE_RECEIVE_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_0031");
     ErrorCode COIN_LENGTH_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_0032");
     ErrorCode IDENTICAL_TOKEN = ErrorCode.init(ModuleE.SW.getPrefix() + "_0033");
+    ErrorCode TX_TYPE_INVALID = ErrorCode.init(ModuleE.SW.getPrefix() + "_0034");
+    ErrorCode RECEIVE_ADDRESS_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_0035");
+    ErrorCode FEE_RECEIVE_ADDRESS_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_0036");
+    ErrorCode COIN_DECIMAL_EXCEEDED = ErrorCode.init(ModuleE.SW.getPrefix() + "_0037");
 
     ErrorCode FARM_SYRUP_PER_BLOCK_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1001");
     ErrorCode FARM_ADMIN_ADDRESS_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1002");
@@ -86,13 +90,13 @@ public interface SwapErrorCode extends CommonCodeConstanst {
     ErrorCode FARM_STAKE_AMOUNT_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1011");
     ErrorCode FARM_STAKE_ADDRESS_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1012");
     ErrorCode FARM_NERVE_STAKE_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1013");
-    ErrorCode FARM_STAKE_LOCK_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_10014");
-    ErrorCode FARM_SYRUP_BALANCE_NOT_ENOUGH = ErrorCode.init(ModuleE.SW.getPrefix() + "_10015");
-    ErrorCode ACCOUNT_VALID_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_10016");
-    ErrorCode MOUDLE_COMMUNICATION_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_10017");
-    ErrorCode BALANCE_NOT_EMOUGH = ErrorCode.init(ModuleE.SW.getPrefix() + "_10018");
-    ErrorCode FARM_IS_NOT_START_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_10019");
-    ErrorCode FARM_IS_LOCKED_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_10020");
-    ErrorCode FARM_TOTAL_SYRUP_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_10021");
+    ErrorCode FARM_STAKE_LOCK_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1014");
+    ErrorCode FARM_SYRUP_BALANCE_NOT_ENOUGH = ErrorCode.init(ModuleE.SW.getPrefix() + "_1015");
+    ErrorCode ACCOUNT_VALID_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1016");
+    ErrorCode MOUDLE_COMMUNICATION_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1017");
+    ErrorCode BALANCE_NOT_EMOUGH = ErrorCode.init(ModuleE.SW.getPrefix() + "_1018");
+    ErrorCode FARM_IS_NOT_START_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1019");
+    ErrorCode FARM_IS_LOCKED_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1020");
+    ErrorCode FARM_TOTAL_SYRUP_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1021");
     ErrorCode FARM_NERVE_WITHDRAW_ERROR = ErrorCode.init(ModuleE.SW.getPrefix() + "_1022");
 }

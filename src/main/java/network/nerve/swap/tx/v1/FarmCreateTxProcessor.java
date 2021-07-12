@@ -87,11 +87,11 @@ public class FarmCreateTxProcessor implements TransactionProcessor {
             Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                this.swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 helper.commit(chainId, tx);
-                this.swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
             }
         } catch (Exception e) {
             chain.getLogger().error(e);

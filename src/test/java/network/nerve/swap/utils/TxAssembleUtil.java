@@ -146,6 +146,8 @@ public class TxAssembleUtil {
                                                    BigInteger amountAMin, BigInteger amountBMin,
                                                    long deadline, byte[] to, LedgerTempBalanceManager tempBalanceManager) throws IOException {
         AddLiquidityData data = new AddLiquidityData();
+        data.setTokenA(tokenA);
+        data.setTokenB(tokenB);
         data.setTo(to);
         data.setDeadline(deadline);
         data.setAmountAMin(amountAMin);

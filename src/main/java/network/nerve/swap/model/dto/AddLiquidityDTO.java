@@ -33,38 +33,38 @@ import java.math.BigInteger;
  */
 public class AddLiquidityDTO {
 
-    private byte[] fromA;
-    private byte[] fromB;
+    private byte[] fromX;
+    private byte[] fromY;
     private byte[] pairAddress;
-    private NerveToken tokenA;
-    private NerveToken tokenB;
-    private BigInteger userLiquidityA;
-    private BigInteger userLiquidityB;
+    private NerveToken tokenX;
+    private NerveToken tokenY;
+    private BigInteger amountX;
+    private BigInteger amountY;
 
-    public AddLiquidityDTO(byte[] fromA, byte[] fromB, byte[] pairAddress, NerveToken tokenA, NerveToken tokenB, BigInteger userLiquidityA, BigInteger userLiquidityB) {
-        this.fromA = fromA;
-        this.fromB = fromB;
+    public AddLiquidityDTO(byte[] fromX, byte[] fromY, byte[] pairAddress, NerveToken tokenX, NerveToken tokenY, BigInteger amountX, BigInteger amountY) {
+        this.fromX = fromX;
+        this.fromY = fromY;
         this.pairAddress = pairAddress;
-        this.tokenA = tokenA;
-        this.tokenB = tokenB;
-        this.userLiquidityA = userLiquidityA;
-        this.userLiquidityB = userLiquidityB;
+        this.tokenX = tokenX;
+        this.tokenY = tokenY;
+        this.amountX = amountX;
+        this.amountY = amountY;
     }
 
-    public byte[] getFromA() {
-        return fromA;
+    public byte[] getFromX() {
+        return fromX;
     }
 
-    public void setFromA(byte[] fromA) {
-        this.fromA = fromA;
+    public void setFromX(byte[] fromX) {
+        this.fromX = fromX;
     }
 
-    public byte[] getFromB() {
-        return fromB;
+    public byte[] getFromY() {
+        return fromY;
     }
 
-    public void setFromB(byte[] fromB) {
-        this.fromB = fromB;
+    public void setFromY(byte[] fromY) {
+        this.fromY = fromY;
     }
 
     public byte[] getPairAddress() {
@@ -75,35 +75,35 @@ public class AddLiquidityDTO {
         this.pairAddress = pairAddress;
     }
 
-    public NerveToken getTokenA() {
-        return tokenA;
+    public NerveToken getTokenX() {
+        return tokenX;
     }
 
-    public void setTokenA(NerveToken tokenA) {
-        this.tokenA = tokenA;
+    public void setTokenX(NerveToken tokenX) {
+        this.tokenX = tokenX;
     }
 
-    public NerveToken getTokenB() {
-        return tokenB;
+    public NerveToken getTokenY() {
+        return tokenY;
     }
 
-    public void setTokenB(NerveToken tokenB) {
-        this.tokenB = tokenB;
+    public void setTokenY(NerveToken tokenY) {
+        this.tokenY = tokenY;
     }
 
-    public BigInteger getUserLiquidityA() {
-        return userLiquidityA;
+    public BigInteger getAmountX() {
+        return amountX;
     }
 
-    public void setUserLiquidityA(BigInteger userLiquidityA) {
-        this.userLiquidityA = userLiquidityA;
+    public void setAmountX(BigInteger amountX) {
+        this.amountX = amountX;
     }
 
-    public BigInteger getUserLiquidityB() {
-        return userLiquidityB;
+    public BigInteger getAmountY() {
+        return amountY;
     }
 
-    public void setUserLiquidityB(BigInteger userLiquidityB) {
-        this.userLiquidityB = userLiquidityB;
+    public void setAmountY(BigInteger amountY) {
+        this.amountY = amountY;
     }
 }

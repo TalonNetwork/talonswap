@@ -10,8 +10,8 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
 import io.nuls.core.log.logback.NulsLogger;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.StableSwapPairCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.StableSwapPairCache;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.help.LedgerAssetRegisterHelper;
@@ -36,11 +36,11 @@ import java.util.Map;
 public class CreateStablePairTxProcessor implements TransactionProcessor {
 
     @Autowired
-    private StableSwapPairCacher stableSwapPairCacher;
+    private StableSwapPairCache stableSwapPairCache;
     @Autowired
     private ChainManager chainManager;
     @Autowired
-    private LedgerAssetCacher ledgerAssetCacher;
+    private LedgerAssetCache ledgerAssetCache;
     @Autowired
     private LedgerAssetRegisterHelper ledgerAssetRegisterHelper;
     @Autowired
@@ -97,11 +97,17 @@ public class CreateStablePairTxProcessor implements TransactionProcessor {
             }
             for (int i = 0; i < length; i++) {
                 NerveToken token = coins[i];
-                LedgerAssetDTO asset = ledgerAssetCacher.getLedgerAsset(token);
+                LedgerAssetDTO asset = ledgerAssetCache.getLedgerAsset(token);
                 if (asset == null) {
                     logger.error("Ledger asset not exist! hash-{}", tx.getHash().toHex());
                     failsList.add(tx);
                     errorCode = SwapErrorCode.LEDGER_ASSET_NOT_EXIST.getCode();
+                    continue C1;
+                }
+                if (asset.getDecimalPlace() > 18) {
+                    logger.error("coin_decimal_exceeded! hash-{}", tx.getHash().toHex());
+                    failsList.add(tx);
+                    errorCode = SwapErrorCode.COIN_DECIMAL_EXCEEDED.getCode();
                     continue C1;
                 }
             }
@@ -122,17 +128,18 @@ public class CreateStablePairTxProcessor implements TransactionProcessor {
             NulsLogger logger = chain.getLogger();
             Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
+                logger.info("[commit] Swap Stable Create Pair, hash: {}", tx.getHash().toHex());
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 byte[] stablePairAddressBytes = AddressTool.getAddress(tx.getHash().getBytes(), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
                 String stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);
                 CreateStablePairData txData = new CreateStablePairData();
                 txData.parse(tx.getTxData(), 0);
                 LedgerAssetDTO dto = ledgerAssetRegisterHelper.lpAssetRegForStable(chainId, stablePairAddress, txData.getCoins());
-                logger.info("[commit] Create Pair Info: {}-{}, symbol: {}, decimals: {}", dto.getChainId(), dto.getAssetId(), dto.getAssetSymbol(), dto.getDecimalPlace());
-                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
+                logger.info("[commit] Swap Stable Create Pair Info: {}-{}, symbol: {}, decimals: {}", dto.getChainId(), dto.getAssetId(), dto.getAssetSymbol(), dto.getDecimalPlace());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -153,10 +160,10 @@ public class CreateStablePairTxProcessor implements TransactionProcessor {
             for (Transaction tx : txs) {
                 SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    return true;
+                    continue;
                 }
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 byte[] stablePairAddressBytes = AddressTool.getAddress(tx.getHash().getBytes(), chainId, SwapConstant.STABLE_PAIR_ADDRESS_TYPE);
                 String stablePairAddress = AddressTool.getStringAddressByBytes(stablePairAddressBytes);

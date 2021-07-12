@@ -23,14 +23,17 @@
  */
 package network.nerve.swap.handler.impl;
 
-import io.nuls.base.basic.AddressTool;
+import io.nuls.base.data.CoinData;
+import io.nuls.base.data.CoinTo;
 import io.nuls.base.data.Transaction;
 import io.nuls.core.constant.TxType;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import io.nuls.core.crypto.HexUtil;
 import io.nuls.core.exception.NulsException;
-import network.nerve.swap.cache.FarmCacher;
+import io.nuls.core.log.Log;
+import io.nuls.core.model.ArraysTool;
+import network.nerve.swap.cache.FarmCache;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.handler.ISwapInvoker;
@@ -54,7 +57,6 @@ import network.nerve.swap.utils.SwapUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Arrays;
 
 /**
  * @author: PierreLuo
@@ -70,7 +72,7 @@ public class FarmStakeHandler extends SwapHandlerConstraints {
     @Autowired
     private FarmStakeHelper helper;
     @Autowired
-    private FarmCacher farmCacher;
+    private FarmCache farmCache;
     @Autowired
     private FarmUserInfoStorageService userInfoStorageService;
 
@@ -90,6 +92,84 @@ public class FarmStakeHandler extends SwapHandlerConstraints {
         SwapResult result = new SwapResult();
         BatchInfo batchInfo = chainManager.getChain(chainId).getBatchInfo();
         try {
+            result = executeTx(chain, result, batchInfo, tx, blockHeight, blockTime);
+        } catch (Exception e) {
+            Log.error(tx.getHash().toHex(), e);
+            result.setSuccess(false);
+        }
+        if (!result.isSuccess()) {
+            try {
+                rollbackLedger(chain, result, batchInfo, tx, blockHeight, blockTime);
+            } catch (Exception e) {
+                Log.error(tx.getHash().toHex(), e);
+                result.setSuccess(false);
+            }
+        }
+        batchInfo.getSwapResultMap().put(tx.getHash().toHex(), result);
+        return result;
+    }
+
+    private void rollbackLedger(Chain chain, SwapResult result, BatchInfo batchInfo, Transaction tx, long blockHeight, long blockTime) {
+        result.setSuccess(false);
+        result.setErrorMessage("Farm stake failed!");
+        result.setTxType(txType());
+        result.setHash(tx.getHash().toHex());
+        result.setTxTime(tx.getTime());
+        result.setBlockHeight(blockHeight);
+        FarmSystemTransaction refund = new FarmSystemTransaction(tx.getHash().toHex(), blockTime);
+        refund.setRemark("Refund.");
+
+        LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
+
+        byte[] farmAddress = SwapUtils.getFarmAddress(chain.getChainId());
+        int stakeChainId = 0;
+        int stakeAssetId = 0;
+        BigInteger amount = null;
+        try {
+            CoinData coinData = tx.getCoinDataInstance();
+            for (CoinTo to : coinData.getTo()) {
+                if (ArraysTool.arrayEquals(farmAddress, to.getAddress())) {
+                    stakeChainId = to.getAssetsChainId();
+                    stakeAssetId = to.getAssetsId();
+                    amount = to.getAmount();
+                }
+            }
+        } catch (NulsException e) {
+            chain.getLogger().error(e);
+            return;
+        }
+        if (amount == null) {
+            return;
+        }
+
+        byte[] toAddress;
+        try {
+            toAddress = SwapUtils.getSingleAddressFromTX(tx, chain.getChainId(), false);
+        } catch (NulsException e) {
+            chain.getLogger().error(e);
+            return;
+        }
+
+        LedgerBalance balanceX = tempBalanceManager.getBalance(farmAddress, stakeChainId, stakeAssetId).getData();
+
+        Transaction refundTx =
+                refund.newFrom()
+                        .setFrom(balanceX, amount).endFrom()
+                        .newTo()
+                        .setToAddress(toAddress)
+                        .setToAssetsChainId(stakeChainId)
+                        .setToAssetsId(stakeAssetId)
+                        .setToAmount(amount).endTo()
+                        .build();
+
+        result.setSubTx(refundTx);
+        String refundTxStr = SwapUtils.nulsData2Hex(refundTx);
+        result.setSubTxStr(refundTxStr);
+    }
+
+    public SwapResult executeTx(Chain chain, SwapResult result, BatchInfo batchInfo, Transaction tx, long blockHeight, long blockTime) {
+
+        try {
             // 提取业务参数
             FarmStakeChangeData txData = new FarmStakeChangeData();
             txData.parse(tx.getTxData(), 0);
@@ -100,7 +180,7 @@ public class FarmStakeHandler extends SwapHandlerConstraints {
 
             FarmPoolPO farm = batchInfo.getFarmTempManager().getFarm(txData.getFarmHash().toHex());
             if (farm == null) {
-                FarmPoolPO realPo = farmCacher.get(txData.getFarmHash());
+                FarmPoolPO realPo = farmCache.get(txData.getFarmHash());
                 farm = realPo.copy();
             }
             //处理
@@ -148,17 +228,34 @@ public class FarmStakeHandler extends SwapHandlerConstraints {
             user.setFarmHash(farm.getFarmHash());
             user.setAmount(BigInteger.ZERO);
             user.setUserAddress(address);
-            user.setRewardDebt(user.getAmount().multiply(farm.getAccSyrupPerShare()).divide(SwapConstant.BI_1E12));
+            user.setRewardDebt(BigInteger.ZERO);
         }
         bus.setUserAmountOld(user.getAmount());
         bus.setUserRewardDebtOld(user.getRewardDebt());
         //生成领取奖励的交易
 //        uint256 pending = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
         BigInteger reward = user.getAmount().multiply(farm.getAccSyrupPerShare()).divide(SwapConstant.BI_1E12).subtract(user.getRewardDebt());
-        if (reward.compareTo(BigInteger.ZERO) > 0) {
-            farm.setSyrupTokenBalance(farm.getSyrupTokenBalance().subtract(reward));
+
+        do {
+            if (reward.compareTo(BigInteger.ZERO) <= 0) {
+                break;
+            }
+            // 糖果余额不足的情况，剩多少领多少
+            if (farm.getSyrupTokenBalance().compareTo(reward) < 0) {
+                reward = BigInteger.ZERO.add(farm.getSyrupTokenBalance());
+            }
+            if (reward.compareTo(BigInteger.ZERO) <= 0) {
+                break;
+            }
+
             LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
-            Transaction subTx = transferReward(chain, farm, address, reward, tx, blockTime, tempBalanceManager);
+            LedgerBalance balance = tempBalanceManager.getBalance(SwapUtils.getFarmAddress(chain.getChainId()), farm.getSyrupToken().getChainId(), farm.getSyrupToken().getAssetId()).getData();
+            // farm余额不足的情况，能领多少算多少,理论上不会出现这种情况
+            if (balance.getBalance().compareTo(reward) < 0) {
+                reward = BigInteger.ZERO.add(farm.getSyrupTokenBalance());
+            }
+            farm.setSyrupTokenBalance(farm.getSyrupTokenBalance().subtract(reward));
+            Transaction subTx = transferReward(chain, farm, address, reward, tx, blockTime, balance);
             tempBalanceManager.refreshTempBalance(chain.getChainId(), subTx, blockTime);
             result.setSubTx(subTx);
             try {
@@ -166,14 +263,15 @@ public class FarmStakeHandler extends SwapHandlerConstraints {
             } catch (IOException e) {
                 throw new NulsException(SwapErrorCode.IO_ERROR, e);
             }
-            byte[] hashBytes = subTx.getHash().getBytes();
-        }
+        } while (false);
+
         farm.setStakeTokenBalance(farm.getStakeTokenBalance().add(txData.getAmount()));
         //更新池子信息
         batchInfo.getFarmTempManager().putFarm(farm);
         //更新用户状态数据
         user.setAmount(user.getAmount().add(txData.getAmount()));
         user.setRewardDebt(user.getAmount().multiply(farm.getAccSyrupPerShare()).divide(SwapConstant.BI_1E12));
+
 
         bus.setAccSyrupPerShareNew(farm.getAccSyrupPerShare());
         bus.setLastRewardBlockNew(farm.getLastRewardBlock());
@@ -185,9 +283,10 @@ public class FarmStakeHandler extends SwapHandlerConstraints {
         batchInfo.getFarmUserTempManager().putUserInfo(user);
     }
 
-    private Transaction transferReward(Chain chain, FarmPoolPO farm, byte[] address, BigInteger reward, Transaction tx, long blockTime, LedgerTempBalanceManager tempBalanceManager) {
+    private Transaction transferReward(Chain chain, FarmPoolPO farm, byte[] address, BigInteger reward, Transaction tx, long blockTime, LedgerBalance balance) {
         FarmSystemTransaction sysTx = new FarmSystemTransaction(tx.getHash().toHex(), blockTime);
-        LedgerBalance balance = tempBalanceManager.getBalance(SwapUtils.getFarmAddress(chain.getChainId()), farm.getStakeToken().getChainId(), farm.getSyrupToken().getAssetId()).getData();
+        sysTx.setRemark("Reward.");
+
         sysTx.newFrom().setFrom(balance, reward).endFrom();
         sysTx.newTo()
                 .setToAddress(address)
@@ -213,12 +312,12 @@ public class FarmStakeHandler extends SwapHandlerConstraints {
         this.helper = helper;
     }
 
-    public FarmCacher getFarmCacher() {
-        return farmCacher;
+    public FarmCache getFarmCacher() {
+        return farmCache;
     }
 
-    public void setFarmCacher(FarmCacher farmCacher) {
-        this.farmCacher = farmCacher;
+    public void setFarmCacher(FarmCache farmCache) {
+        this.farmCache = farmCache;
     }
 
     public FarmUserInfoStorageService getUserInfoStorageService() {

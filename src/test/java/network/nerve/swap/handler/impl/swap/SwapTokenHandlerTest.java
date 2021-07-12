@@ -53,8 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static network.nerve.swap.constant.SwapConstant.BI_100_000;
-import static network.nerve.swap.constant.SwapConstant.BI_3;
+import static network.nerve.swap.constant.SwapConstant.*;
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -74,6 +73,7 @@ public class SwapTokenHandlerTest {
     protected String address20;
     protected String address21;
     protected String address22 = "TNVTdTSPRyJgExG4HQu5g1sVxhVVFcpCa6fqw";
+    protected String address23 = "TNVTdTSPVnoPACtKgRmQy4s7SG3vm6XyR2Ffv";
 
     @Before
     public void init() {
@@ -90,8 +90,9 @@ public class SwapTokenHandlerTest {
         address21 = addLiquidityHandlerTest.address21;
         BeanUtilTest.setBean(handler, "chainManager", addLiquidityHandlerTest.chainManager);
         BeanUtilTest.setBean(handler, "iPairFactory", iPairFactory);
-        BeanUtilTest.setBean(handler, "swapPairCacher", addLiquidityHandlerTest.swapPairCacher);
+        BeanUtilTest.setBean(handler, "swapPairCache", addLiquidityHandlerTest.swapPairCache);
         SwapContext.AWARD_FEE_SYSTEM_ADDRESS = AddressTool.getAddress(address22);
+        SwapContext.AWARD_FEE_DESTRUCTION_ADDRESS = AddressTool.getAddress(address23);
     }
 
     @Test
@@ -165,10 +166,7 @@ public class SwapTokenHandlerTest {
                 SwapTradeBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), SwapTradeBus.class);
                 List<TradePairBus> busList = bus.getTradePairBuses();
                 for (TradePairBus pairBus : busList) {
-                    BigInteger unLiquidityAwardFee = amountIn
-                            .multiply(BI_3)
-                            .multiply(SwapContext.FEE_PERCENT_ALLOCATION_UN_LIQUIDIDY)
-                            .divide(BI_100_000);
+                    BigInteger unLiquidityAwardFee = amountIn.divide(BI_1000);
                     IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(pairBus.getPairAddress()));
                     SwapPairDTO dto = BeanUtilTest.getBean(pair, "swapPairDTO", SwapPairDTO.class);
                     Assert.assertEquals("交易前的池子资产A", BigInteger.valueOf(250_00000008L), pairBus.getReserve0());

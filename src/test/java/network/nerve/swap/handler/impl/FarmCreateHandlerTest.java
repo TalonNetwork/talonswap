@@ -1,9 +1,6 @@
 package network.nerve.swap.handler.impl;
 
 import io.nuls.base.data.Transaction;
-import io.nuls.base.signture.P2PHKSignature;
-import io.nuls.base.signture.SignatureUtil;
-import io.nuls.base.signture.TransactionSignature;
 import io.nuls.core.crypto.ECKey;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.logback.LoggerBuilder;
@@ -11,7 +8,8 @@ import io.nuls.core.rpc.model.ModuleE;
 import network.nerve.swap.JunitCase;
 import network.nerve.swap.JunitExecuter;
 import network.nerve.swap.JunitUtils;
-import network.nerve.swap.cache.impl.FarmCacherImpl;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.impl.FarmCacheImpl;
 import network.nerve.swap.config.ConfigBean;
 import network.nerve.swap.manager.ChainManager;
 import network.nerve.swap.manager.FarmTempManager;
@@ -35,7 +33,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.Assert.assertNotNull;
@@ -46,7 +43,7 @@ import static org.junit.Assert.assertNull;
  */
 public class FarmCreateHandlerTest {
     private FarmCreateHandler handler;
-    private FarmCacherImpl farmCacher;
+    private FarmCacheImpl farmCacher;
     private Chain chain;
 
     @Before
@@ -66,28 +63,21 @@ public class FarmCreateHandlerTest {
         chain.setConfig(cfg);
         chainManager.getChainMap().put(9, chain);
         handler.setChainManager(chainManager);
-        this.farmCacher = new FarmCacherImpl();
+        this.farmCacher = new FarmCacheImpl();
         handler.getHelper().setFarmCacher(farmCacher);
-        handler.getHelper().setLedgerService(new LedgerService() {
+        handler.getHelper().setLedgerAssetCache(new LedgerAssetCache() {
             @Override
-            public boolean existNerveAsset(int chainId, int assetChainId, int assetId) throws NulsException {
-
-                return (assetChainId == 1 || assetChainId == 9) && assetId == 1;
+            public LedgerAssetDTO getLedgerAsset(int chainId, int assetId) {
+                String key = chainId + "-" + assetId;
+                return new LedgerAssetDTO(chainId, assetId, "symbol_" + key, "name_" + key, 0);
             }
 
             @Override
-            public LedgerAssetDTO getNerveAsset(int chainId, int assetChainId, int assetId) {
-                return null;
-            }
-
-            @Override
-            public NonceBalance getBalanceNonce(int chainId, int assetChainId, int assetId, String address) throws NulsException {
-                return null;
-            }
-
-            @Override
-            public LedgerBalance getLedgerBalance(int chainId, int assetChainId, int assetId, String address) throws NulsException {
-                return null;
+            public LedgerAssetDTO getLedgerAsset(NerveToken token) {
+                if (token == null) {
+                    return null;
+                }
+                return getLedgerAsset(token.getChainId(), token.getAssetId());
             }
         });
         handler.getHelper().setStorageService(new FarmStorageService() {

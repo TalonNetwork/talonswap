@@ -12,8 +12,8 @@ import io.nuls.core.crypto.HexUtil;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
 import io.nuls.core.log.logback.NulsLogger;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.SwapPairCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.SwapPairCache;
 import network.nerve.swap.constant.SwapConstant;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.handler.impl.SwapTradeHandler;
@@ -50,9 +50,9 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
     @Autowired
     private SwapTradeHandler swapTradeHandler;
     @Autowired
-    private LedgerAssetCacher ledgerAssetCacher;
+    private LedgerAssetCache ledgerAssetCache;
     @Autowired
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
 
     @Override
     public int getType() {
@@ -112,7 +112,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
             int length = path.length;
             for (int i = 0; i < length; i++) {
                 NerveToken token = path[i];
-                LedgerAssetDTO asset = ledgerAssetCacher.getLedgerAsset(token);
+                LedgerAssetDTO asset = ledgerAssetCache.getLedgerAsset(token);
                 if (asset == null) {
                     logger.error("Ledger asset not exist! hash-{}", tx.getHash().toHex());
                     failsList.add(tx);
@@ -122,7 +122,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
                 if (i == length - 1) {
                     continue;
                 }
-                if (!swapPairCacher.isExist(SwapUtils.getStringPairAddress(chainId, token, path[i + 1]))) {
+                if (!swapPairCache.isExist(SwapUtils.getStringPairAddress(chainId, token, path[i + 1]))) {
                     logger.error("PAIR_ADDRESS_ERROR! hash-{}", tx.getHash().toHex());
                     failsList.add(tx);
                     errorCode = SwapErrorCode.PAIR_ADDRESS_ERROR.getCode();
@@ -135,7 +135,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
             try {
                 coinData = tx.getCoinDataInstance();
                 dto = swapTradeHandler.getSwapTradeInfo(chainId, coinData);
-                if (!swapPairCacher.isExist(AddressTool.getStringAddressByBytes(dto.getFirstPairAddress()))) {
+                if (!swapPairCache.isExist(AddressTool.getStringAddressByBytes(dto.getFirstPairAddress()))) {
                     logger.error("PAIR_NOT_EXIST! hash-{}", tx.getHash().toHex());
                     failsList.add(tx);
                     errorCode = SwapErrorCode.PAIR_NOT_EXIST.getCode();
@@ -148,7 +148,7 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
                     continue;
                 }
                 swapTradeHandler.calSwapTradeBusiness(chainId, iPairFactory, dto.getAmountIn(),
-                        txData.getTo(), txData.getPath(), txData.getAmountOutMin());
+                        txData.getTo(), txData.getPath(), txData.getAmountOutMin(), txData.getFeeTo());
             } catch (NulsException e) {
                 Log.error(e);
                 failsList.add(tx);
@@ -172,10 +172,12 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
             NulsLogger logger = chain.getLogger();
             Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
+                logger.info("[commit] Swap Trade, hash: {}", tx.getHash().toHex());
                 // 从执行结果中提取业务数据
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 SwapTradeBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), SwapTradeBus.class);
 
@@ -185,8 +187,6 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
                     IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(pairBus.getPairAddress()));
                     pair.update(BigInteger.ZERO, pairBus.getBalance0(), pairBus.getBalance1(), pairBus.getReserve0(), pairBus.getReserve1(), blockHeader.getHeight(), blockHeader.getTime());
                 }
-                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
-                logger.info("[commit] Swap Trade, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -207,10 +207,10 @@ public class SwapTradeTxProcessor implements TransactionProcessor {
             for (Transaction tx : txs) {
                 SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    return true;
+                    continue;
                 }
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 SwapTradeBus bus = SwapDBUtil.getModel(HexUtil.decode(result.getBusiness()), SwapTradeBus.class);
                 // 回滚Pair的资金池

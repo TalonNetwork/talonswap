@@ -27,8 +27,11 @@ import io.nuls.base.basic.AddressTool;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import io.nuls.core.exception.NulsException;
-import network.nerve.swap.cache.StableSwapPairCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.StableSwapPairCache;
+import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.model.NerveToken;
+import network.nerve.swap.model.dto.LedgerAssetDTO;
 import network.nerve.swap.model.po.stable.StableSwapPairBalancesPo;
 import network.nerve.swap.model.po.stable.StableSwapPairPo;
 import network.nerve.swap.rpc.call.LedgerCall;
@@ -46,24 +49,34 @@ import java.util.Arrays;
 public class StableSwapHelper {
 
     @Autowired
-    private StableSwapPairCacher stableSwapPairCacher;
+    private StableSwapPairCache stableSwapPairCache;
     @Autowired
     private SwapStablePairStorageService swapStablePairStorageService;
     @Autowired
     private SwapStablePairBalancesStorageService swapStablePairBalancesStorageService;
+    @Autowired
+    private LedgerAssetCache ledgerAssetCache;
 
     public boolean isLegalCoinForAddStable(int chainId, String stablePairAddress, int assetChainId, int assetId) throws NulsException {
-        boolean existNerveAsset = LedgerCall.existNerveAsset(chainId, assetChainId, assetId);
-        if (!existNerveAsset) {
+        SwapContext.logger.debug("chainId: {}, stablePairAddress: {}, assetChainId: {}, assetId: {},", chainId, stablePairAddress, assetChainId, assetId);
+        LedgerAssetDTO asset = LedgerCall.getNerveAsset(chainId, assetChainId, assetId);
+        if (asset == null) {
+            SwapContext.logger.error("资产不存在. {}-{}-{}", chainId, assetChainId, assetId);
+            return false;
+        }
+        if (asset.getDecimalPlace() > 18) {
+            SwapContext.logger.error("coin_decimal_exceeded! stablePairAddress: {}, assetChainId: {}, assetId: {}, decimal: {}", stablePairAddress, assetChainId, assetId, asset.getDecimalPlace());
             return false;
         }
         StableSwapPairPo pairPo = swapStablePairStorageService.getPair(stablePairAddress);
         if (pairPo == null) {
+            SwapContext.logger.error("交易对不存在. {}", stablePairAddress);
             return false;
         }
         NerveToken[] coins = pairPo.getCoins();
         for (NerveToken coin : coins) {
             if (coin.getChainId() == assetChainId && coin.getAssetId() == assetId) {
+                SwapContext.logger.error("资产冲突. {}, {}-{}", coin.str(), assetChainId, assetId);
                 return false;
             }
         }
@@ -82,6 +95,10 @@ public class StableSwapHelper {
         NerveToken[] newCoins = Arrays.copyOf(coins, length + 1);
         newCoins[length] = newCoin;
         pairPo.setCoins(newCoins);
+        LedgerAssetDTO newAsset = ledgerAssetCache.getLedgerAsset(newCoin);
+        int[] newDecimalsOfCoins = Arrays.copyOf(pairPo.getDecimalsOfCoins(), length + 1);
+        newDecimalsOfCoins[length] = newAsset.getDecimalPlace();
+        pairPo.setDecimalsOfCoins(newDecimalsOfCoins);
         swapStablePairStorageService.savePair(address, pairPo);
 
         StableSwapPairBalancesPo pairBalancesPo = swapStablePairBalancesStorageService.getPairBalances(stablePairAddress);
@@ -92,7 +109,7 @@ public class StableSwapHelper {
         swapStablePairBalancesStorageService.savePairBalances(stablePairAddress, pairBalancesPo);
 
         // 更新缓存
-        stableSwapPairCacher.remove(stablePairAddress);
+        stableSwapPairCache.remove(stablePairAddress);
         return true;
     }
 }

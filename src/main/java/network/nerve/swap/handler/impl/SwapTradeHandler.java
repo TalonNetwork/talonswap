@@ -34,7 +34,7 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.crypto.HexUtil;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
-import network.nerve.swap.cache.SwapPairCacher;
+import network.nerve.swap.cache.SwapPairCache;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.context.SwapContext;
 import network.nerve.swap.handler.ISwapInvoker;
@@ -79,7 +79,7 @@ public class SwapTradeHandler extends SwapHandlerConstraints {
     @Autowired
     private ChainManager chainManager;
     @Autowired
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
 
     @Override
     public Integer txType() {
@@ -119,8 +119,8 @@ public class SwapTradeHandler extends SwapHandlerConstraints {
             BigInteger amountIn = dto.getAmountIn();
 
             // 整合计算数据
-            SwapTradeBus bus = calSwapTradeBusiness(chainId, iPairFactory, amountIn,
-                    txData.getTo(), path, txData.getAmountOutMin());
+            SwapTradeBus bus = this.calSwapTradeBusiness(chainId, iPairFactory, amountIn,
+                    txData.getTo(), path, txData.getAmountOutMin(), txData.getFeeTo());
             // 装填执行结果
             result.setTxType(txType());
             result.setSuccess(true);
@@ -205,35 +205,53 @@ public class SwapTradeHandler extends SwapHandlerConstraints {
                 }
                 sysDeal.newFrom()
                         .setFrom(ledgerBalanceFeeOut, unLiquidityAwardFee).endFrom();
+                // 销毁地址的手续费奖励，占比50%，在`非`流动性提供者可奖励的交易手续费当中
+                BigInteger destructionAwardFee = unLiquidityAwardFee.divide(BI_2);
+                // 金额太小时，不足以 divide 2，则全分配给销毁地址
+                if (destructionAwardFee.equals(BigInteger.ZERO)) {
+                    sysDeal.newTo()
+                            .setToAddress(SwapContext.AWARD_FEE_DESTRUCTION_ADDRESS)
+                            .setToAssetsChainId(tokenIn.getChainId())
+                            .setToAssetsId(tokenIn.getAssetId())
+                            .setToAmount(unLiquidityAwardFee).endTo();
+                    break;
+                }
+                sysDeal.newTo()
+                        .setToAddress(SwapContext.AWARD_FEE_DESTRUCTION_ADDRESS)
+                        .setToAssetsChainId(tokenIn.getChainId())
+                        .setToAssetsId(tokenIn.getAssetId())
+                        .setToAmount(destructionAwardFee).endTo();
                 // 系统地址的手续费奖励
                 BigInteger systemAwardFee;
                 // 当前交易的指定地址的手续费奖励
                 BigInteger assignAddrAwardFee;
                 if (feeTo == null) {
-                    // 交易未指定手续费奖励地址，则这部分手续费奖励分发给系统地址
-                    systemAwardFee = unLiquidityAwardFee;
+                    // 交易未指定手续费奖励地址，则这部分手续费奖励分发给系统地址和销毁地址
+                    systemAwardFee = unLiquidityAwardFee.subtract(destructionAwardFee);
                     sysDeal.newTo()
                             .setToAddress(SwapContext.AWARD_FEE_SYSTEM_ADDRESS)
                             .setToAssetsChainId(tokenIn.getChainId())
                             .setToAssetsId(tokenIn.getAssetId())
                             .setToAmount(systemAwardFee).endTo();
                 } else {
-                    // 其中奖励给系统的交易手续费
-                    systemAwardFee = unLiquidityAwardFee.multiply(SwapContext.FEE_PERCENT_SYSTEM_RECEIVE).divide(BI_100);
-                    // 其中奖励给当前交易指定地址的交易手续费
-                    assignAddrAwardFee = unLiquidityAwardFee.subtract(systemAwardFee);
-                    if (!systemAwardFee.equals(BigInteger.ZERO)) {
+                    BigInteger tempFee = unLiquidityAwardFee.subtract(destructionAwardFee);
+                    // 其中奖励给当前交易指定地址的交易手续费，占比70%，在扣除销毁部分后
+                    assignAddrAwardFee= tempFee.multiply(BI_7).divide(BI_10);
+                    // 剩余给系统的交易手续费
+                    systemAwardFee  = tempFee.subtract(assignAddrAwardFee);
+                    if (!assignAddrAwardFee.equals(BigInteger.ZERO)) {
                         sysDeal.newTo()
-                                .setToAddress(SwapContext.AWARD_FEE_SYSTEM_ADDRESS)
+                                .setToAddress(feeTo)
                                 .setToAssetsChainId(tokenIn.getChainId())
                                 .setToAssetsId(tokenIn.getAssetId())
-                                .setToAmount(systemAwardFee).endTo();
+                                .setToAmount(assignAddrAwardFee).endTo();
                     }
                     sysDeal.newTo()
-                            .setToAddress(feeTo)
+                            .setToAddress(SwapContext.AWARD_FEE_SYSTEM_ADDRESS)
                             .setToAssetsChainId(tokenIn.getChainId())
                             .setToAssetsId(tokenIn.getAssetId())
-                            .setToAmount(assignAddrAwardFee).endTo();
+                            .setToAmount(systemAwardFee).endTo();
+
                 }
             } while (false);
         }
@@ -269,7 +287,13 @@ public class SwapTradeHandler extends SwapHandlerConstraints {
             int chainId, IPairFactory iPairFactory,
             BigInteger _amountIn, byte[] _to,
             NerveToken[] path,
-            BigInteger amountOutMin) throws NulsException {
+            BigInteger amountOutMin, byte[] feeTo) throws NulsException {
+        if (!AddressTool.validAddress(chainId, _to)) {
+            throw new NulsException(SwapErrorCode.RECEIVE_ADDRESS_ERROR);
+        }
+        if (feeTo != null && !AddressTool.validAddress(chainId, feeTo)) {
+            throw new NulsException(SwapErrorCode.FEE_RECEIVE_ADDRESS_ERROR);
+        }
         BigInteger[] amounts = SwapUtils.getAmountsOut(chainId, iPairFactory, _amountIn, path);
         if (amounts[amounts.length - 1].compareTo(amountOutMin) < 0) {
             throw new NulsException(SwapErrorCode.INSUFFICIENT_OUTPUT_AMOUNT);
@@ -283,11 +307,8 @@ public class SwapTradeHandler extends SwapHandlerConstraints {
             NerveToken[] tokens = SwapUtils.tokenSort(input, output);
             NerveToken token0 = tokens[0];
             BigInteger amountIn = amounts[i];
-            // `非`流动性提供者可奖励的交易手续费
-            BigInteger unLiquidityAwardFee = amountIn
-                    .multiply(BI_3)
-                    .multiply(SwapContext.FEE_PERCENT_ALLOCATION_UN_LIQUIDIDY)
-                    .divide(BI_100_000);
+            // `非`流动性提供者可奖励的交易手续费, 占交易金额的0.1%
+            BigInteger unLiquidityAwardFee = amountIn.divide(BI_1000);
             BigInteger amountOut = amounts[i + 1];
             BigInteger amount0Out, amount1Out, amount0In, amount1In, amount0InUnLiquidityAwardFee, amount1InUnLiquidityAwardFee;
             if (input.equals(token0)) {

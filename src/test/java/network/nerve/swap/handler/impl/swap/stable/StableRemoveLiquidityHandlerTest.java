@@ -30,8 +30,8 @@ import io.nuls.core.crypto.HexUtil;
 import network.nerve.swap.JunitCase;
 import network.nerve.swap.JunitExecuter;
 import network.nerve.swap.JunitUtils;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.StableSwapPairCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.StableSwapPairCache;
 import network.nerve.swap.handler.ISwapHandler;
 import network.nerve.swap.handler.impl.stable.StableRemoveLiquidityHandler;
 import network.nerve.swap.help.IPairFactory;
@@ -41,7 +41,6 @@ import network.nerve.swap.model.Chain;
 import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.bo.BatchInfo;
 import network.nerve.swap.model.bo.SwapResult;
-import network.nerve.swap.model.business.stable.StableAddLiquidityBus;
 import network.nerve.swap.model.business.stable.StableRemoveLiquidityBus;
 import network.nerve.swap.model.dto.LedgerAssetDTO;
 import network.nerve.swap.model.dto.stable.StableSwapPairDTO;
@@ -53,7 +52,6 @@ import org.junit.Test;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -65,7 +63,7 @@ public class StableRemoveLiquidityHandlerTest {
 
     protected StableAddLiquidityHandlerTest stableAddLiquidityHandlerTest;
     protected StableRemoveLiquidityHandler handler;
-    protected StableSwapPairCacher stableSwapPairCacher;
+    protected StableSwapPairCache stableSwapPairCache;
     protected IPairFactory iPairFactory;
     protected Chain chain;
     protected NerveToken token0;
@@ -95,8 +93,8 @@ public class StableRemoveLiquidityHandlerTest {
         stablePairAddress = stableAddLiquidityHandlerTest.stablePairAddress;
         BeanUtilTest.setBean(handler, "chainManager", stableAddLiquidityHandlerTest.chainManager);
         BeanUtilTest.setBean(handler, "iPairFactory", iPairFactory);
-        BeanUtilTest.setBean(handler, "stableSwapPairCacher", stableAddLiquidityHandlerTest.stableSwapPairCacher);
-        BeanUtilTest.setBean(handler, "ledgerAssetCacher", new LedgerAssetCacher() {
+        BeanUtilTest.setBean(handler, "stableSwapPairCache", stableAddLiquidityHandlerTest.stableSwapPairCache);
+        BeanUtilTest.setBean(handler, "ledgerAssetCache", new LedgerAssetCache() {
             @Override
             public LedgerAssetDTO getLedgerAsset(int chainId, int assetId) {
                 String key = chainId + "-" + assetId;
@@ -135,9 +133,9 @@ public class StableRemoveLiquidityHandlerTest {
         items.add(this.getCase0());
         JunitUtils.execute(items, executer);
 
-        items.clear();
-        items.add(this.getCase1());
-        JunitUtils.execute(items, executer);
+        //items.clear();
+        //items.add(this.getCase1());
+        //JunitUtils.execute(items, executer);
 
     }
 
@@ -154,7 +152,7 @@ public class StableRemoveLiquidityHandlerTest {
         byte[] to = AddressTool.getAddress(address21);
 
         BigInteger toAddressBalanceLP = tempBalanceManager.getBalance(to, tokenLP.getChainId(), tokenLP.getAssetId()).getData().getBalance();
-        BigInteger amountLP = toAddressBalanceLP.divide(BigInteger.valueOf(4)).multiply(BigInteger.valueOf(3));
+        BigInteger amountLP = toAddressBalanceLP.multiply(BigInteger.valueOf(2)).divide(BigInteger.valueOf(4));
 
         Transaction tx = TxAssembleUtil.asmbStableSwapRemoveLiquidity(chainId, from,
                 amountLP, tokenLP, new byte[]{1, 0}, stablePairAddressBytes, to, tempBalanceManager);
@@ -172,10 +170,10 @@ public class StableRemoveLiquidityHandlerTest {
 
                 IStablePair pair = iPairFactory.getStablePair(stablePairAddress);
                 StableSwapPairDTO dto = BeanUtilTest.getBean(pair, "stableSwapPairDTO", StableSwapPairDTO.class);
-                Assert.assertEquals("移除前的池子资产0", BigInteger.valueOf(400_00000000L), bus.getBalances()[0]);
-                Assert.assertEquals("移除前的池子资产1", BigInteger.valueOf(400_00000000L), bus.getBalances()[1]);
-                Assert.assertEquals("赎回的资产0", BigInteger.valueOf(200_00000000L), bus.getAmounts()[0]);
-                Assert.assertEquals("赎回的资产1", BigInteger.valueOf(400_00000000L), bus.getAmounts()[1]);
+                Assert.assertEquals("移除前的池子资产0", BigInteger.valueOf(30300_000000L), bus.getBalances()[0]);
+                Assert.assertEquals("移除前的池子资产1", BigInteger.valueOf(20200_000000000L), bus.getBalances()[1]);
+                Assert.assertEquals("赎回的资产0", BigInteger.valueOf(5050_000000L), bus.getAmounts()[0]);
+                Assert.assertEquals("赎回的资产1", BigInteger.valueOf(20200_000000000L), bus.getAmounts()[1]);
                 Assert.assertEquals("用户余额token0", bus.getAmounts()[0], _toAddressBalanceToken0);
                 Assert.assertEquals("用户余额token1", bus.getAmounts()[1], _toAddressBalanceToken1);
                 Assert.assertEquals("用户移除的流动性份额", amountLP, toAddressBalanceLP.subtract(_toAddressBalanceLP));

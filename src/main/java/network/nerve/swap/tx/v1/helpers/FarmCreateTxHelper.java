@@ -10,7 +10,8 @@ import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
 import io.nuls.core.log.logback.NulsLogger;
 import io.nuls.core.model.ArraysTool;
-import network.nerve.swap.cache.FarmCacher;
+import network.nerve.swap.cache.FarmCache;
+import network.nerve.swap.cache.LedgerAssetCache;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.model.Chain;
 import network.nerve.swap.model.ValidaterResult;
@@ -29,13 +30,13 @@ import java.math.BigInteger;
 public class FarmCreateTxHelper {
 
     @Autowired
-    private FarmCacher farmCacher;
+    private FarmCache farmCache;
 
     @Autowired
     private FarmStorageService storageService;
 
     @Autowired
-    private LedgerService ledgerService;
+    private LedgerAssetCache ledgerAssetCache;
 
 
     public ValidaterResult commit(int chainId, Transaction tx) throws NulsException {
@@ -44,7 +45,7 @@ public class FarmCreateTxHelper {
 
         FarmPoolPO po = getBean(chainId, tx, txData);
 
-        farmCacher.put(tx.getHash(), po);
+        farmCache.put(tx.getHash(), po);
         storageService.save(chainId, po);
         return ValidaterResult.getSuccess();
     }
@@ -84,7 +85,7 @@ public class FarmCreateTxHelper {
     }
 
     public ValidaterResult rollback(int chainId, Transaction tx) {
-        farmCacher.remove(tx.getHash());
+        farmCache.remove(tx.getHash());
         storageService.delete(chainId, tx.getHash().getBytes());
         return ValidaterResult.getSuccess();
     }
@@ -111,18 +112,13 @@ public class FarmCreateTxHelper {
             return ValidaterResult.getFailed(SwapErrorCode.PARAMETER_ERROR);
         }
         // 验证2种资产存在
-        try {
-            if (!ledgerService.existNerveAsset(chainId, txData.getStakeToken().getChainId(), txData.getStakeToken().getAssetId())) {
-                logger.warn("质押资产类型不正确");
-                return ValidaterResult.getFailed(SwapErrorCode.FARM_TOKEN_ERROR);
-            }
-            if (!ledgerService.existNerveAsset(chainId, txData.getSyrupToken().getChainId(), txData.getSyrupToken().getAssetId())) {
-                logger.warn("糖果资产类型不正确");
-                return ValidaterResult.getFailed(SwapErrorCode.FARM_TOKEN_ERROR);
-            }
-        } catch (NulsException e) {
-            logger.error(e);
-            return ValidaterResult.getFailed(e.getErrorCode());
+        if (ledgerAssetCache.getLedgerAsset(txData.getStakeToken()) == null) {
+            logger.warn("质押资产类型不正确");
+            return ValidaterResult.getFailed(SwapErrorCode.FARM_TOKEN_ERROR);
+        }
+        if (ledgerAssetCache.getLedgerAsset(txData.getSyrupToken()) == null) {
+            logger.warn("糖果资产类型不正确");
+            return ValidaterResult.getFailed(SwapErrorCode.FARM_TOKEN_ERROR);
         }
 
         // 验证每个区块奖励数额区间正确
@@ -182,15 +178,15 @@ public class FarmCreateTxHelper {
         return ValidaterResult.getSuccess();
     }
 
-    public void setFarmCacher(FarmCacher farmCacher) {
-        this.farmCacher = farmCacher;
+    public void setFarmCacher(FarmCache farmCache) {
+        this.farmCache = farmCache;
     }
 
     public void setStorageService(FarmStorageService storageService) {
         this.storageService = storageService;
     }
 
-    public void setLedgerService(LedgerService ledgerService) {
-        this.ledgerService = ledgerService;
+    public void setLedgerAssetCache(LedgerAssetCache ledgerAssetCache) {
+        this.ledgerAssetCache = ledgerAssetCache;
     }
 }

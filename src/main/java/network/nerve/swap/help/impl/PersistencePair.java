@@ -24,7 +24,7 @@
 package network.nerve.swap.help.impl;
 
 import io.nuls.base.basic.AddressTool;
-import network.nerve.swap.cache.SwapPairCacher;
+import network.nerve.swap.cache.SwapPairCache;
 import network.nerve.swap.model.dto.SwapPairDTO;
 import network.nerve.swap.model.po.SwapPairReservesPO;
 import network.nerve.swap.storage.SwapPairReservesStorageService;
@@ -39,12 +39,12 @@ public class PersistencePair extends AbstractPair {
 
     private SwapPairDTO swapPairDTO;
     private SwapPairReservesStorageService swapPairReservesStorageService;
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
 
-    public PersistencePair(SwapPairDTO swapPairDTO, SwapPairReservesStorageService swapPairReservesStorageService, SwapPairCacher swapPairCacher) {
+    public PersistencePair(SwapPairDTO swapPairDTO, SwapPairReservesStorageService swapPairReservesStorageService, SwapPairCache swapPairCache) {
         this.swapPairDTO = swapPairDTO;
         this.swapPairReservesStorageService = swapPairReservesStorageService;
-        this.swapPairCacher = swapPairCacher;
+        this.swapPairCache = swapPairCache;
     }
 
 
@@ -65,7 +65,7 @@ public class PersistencePair extends AbstractPair {
         SwapPairReservesPO po = new SwapPairReservesPO(getPair().getAddress(), balance0, balance1, swapPairDTO.getTotalLP(), blockTime, blockHeight);
         swapPairReservesStorageService.savePairReserves(pairAddress, po);
         // 更新缓存
-        swapPairCacher.remove(pairAddress);
+        swapPairCache.remove(pairAddress);
     }
 
     @Override
@@ -80,6 +80,6 @@ public class PersistencePair extends AbstractPair {
         SwapPairReservesPO po = new SwapPairReservesPO(getPair().getAddress(), reserve0, reserve1, swapPairDTO.getTotalLP(), blockTime, blockHeight);
         swapPairReservesStorageService.savePairReserves(pairAddress, po);
         // 更新缓存
-        swapPairCacher.remove(pairAddress);
+        swapPairCache.remove(pairAddress);
     }
 }

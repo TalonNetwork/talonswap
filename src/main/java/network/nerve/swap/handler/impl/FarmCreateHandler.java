@@ -23,23 +23,31 @@
  */
 package network.nerve.swap.handler.impl;
 
+import io.nuls.base.data.CoinData;
+import io.nuls.base.data.CoinTo;
 import io.nuls.base.data.Transaction;
 import io.nuls.core.constant.TxType;
 import io.nuls.core.core.annotation.Autowired;
 import io.nuls.core.core.annotation.Component;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
-import network.nerve.swap.constant.SwapErrorCode;
+import io.nuls.core.model.ArraysTool;
 import network.nerve.swap.handler.ISwapInvoker;
 import network.nerve.swap.handler.SwapHandlerConstraints;
 import network.nerve.swap.manager.ChainManager;
+import network.nerve.swap.manager.LedgerTempBalanceManager;
 import network.nerve.swap.model.Chain;
 import network.nerve.swap.model.ValidaterResult;
 import network.nerve.swap.model.bo.BatchInfo;
+import network.nerve.swap.model.bo.LedgerBalance;
 import network.nerve.swap.model.bo.SwapResult;
 import network.nerve.swap.model.po.FarmPoolPO;
+import network.nerve.swap.model.tx.FarmSystemTransaction;
 import network.nerve.swap.model.txdata.FarmCreateData;
 import network.nerve.swap.tx.v1.helpers.FarmCreateTxHelper;
+import network.nerve.swap.utils.SwapUtils;
+
+import java.math.BigInteger;
 
 /**
  * @author: PierreLuo
@@ -72,6 +80,83 @@ public class FarmCreateHandler extends SwapHandlerConstraints {
         SwapResult result = new SwapResult();
         BatchInfo batchInfo = chainManager.getChain(chainId).getBatchInfo();
         try {
+            result = executeTx(chain, result, batchInfo, tx, blockHeight);
+        } catch (Exception e) {
+            Log.error(tx.getHash().toHex(), e);
+            result.setSuccess(false);
+        }
+        if (!result.isSuccess()) {
+            try {
+                rollbackLedger(chain, result, batchInfo, tx, blockHeight, blockTime);
+            } catch (Exception e) {
+                Log.error(tx.getHash().toHex(), e);
+                result.setSuccess(false);
+            }
+        }
+        batchInfo.getSwapResultMap().put(tx.getHash().toHex(), result);
+        return result;
+    }
+
+    private void rollbackLedger(Chain chain, SwapResult result, BatchInfo batchInfo, Transaction tx, long blockHeight, long blockTime) {
+        result.setSuccess(false);
+        result.setErrorMessage("Farm create failed!");
+        result.setTxType(txType());
+        result.setHash(tx.getHash().toHex());
+        result.setTxTime(tx.getTime());
+        result.setBlockHeight(blockHeight);
+        FarmSystemTransaction refund = new FarmSystemTransaction(tx.getHash().toHex(), blockTime);
+        refund.setRemark("Refund.");
+
+        LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
+
+        byte[] farmAddress = SwapUtils.getFarmAddress(chain.getChainId());
+        int syrupChainId = 0;
+        int syrupAssetId = 0;
+        BigInteger amount = null;
+        try {
+            CoinData coinData = tx.getCoinDataInstance();
+            for (CoinTo to : coinData.getTo()) {
+                if (ArraysTool.arrayEquals(farmAddress, to.getAddress())) {
+                    syrupChainId = to.getAssetsChainId();
+                    syrupAssetId = to.getAssetsId();
+                    amount = to.getAmount();
+                }
+            }
+        } catch (NulsException e) {
+            chain.getLogger().error(e);
+            return;
+        }
+        if (amount == null) {
+            return;
+        }
+
+        byte[] toAddress ;
+        try {
+            toAddress = SwapUtils.getSingleAddressFromTX(tx, chain.getChainId(), false);
+        } catch (NulsException e) {
+            chain.getLogger().error(e);
+            return;
+        }
+
+        LedgerBalance balanceX = tempBalanceManager.getBalance(farmAddress, syrupChainId, syrupAssetId).getData();
+
+        Transaction refundTx =
+                refund.newFrom()
+                        .setFrom(balanceX, amount).endFrom()
+                        .newTo()
+                        .setToAddress(toAddress)
+                        .setToAssetsChainId(syrupChainId)
+                        .setToAssetsId(syrupAssetId)
+                        .setToAmount(amount).endTo()
+                        .build();
+
+        result.setSubTx(refundTx);
+        String refundTxStr = SwapUtils.nulsData2Hex(refundTx);
+        result.setSubTxStr(refundTxStr);
+    }
+
+    public SwapResult executeTx(Chain chain, SwapResult result, BatchInfo batchInfo, Transaction tx, long blockHeight) {
+        try {
             // 提取业务参数
             FarmCreateData txData = new FarmCreateData();
             txData.parse(tx.getTxData(), 0);
@@ -80,7 +165,7 @@ public class FarmCreateHandler extends SwapHandlerConstraints {
                 throw new NulsException(validaterResult.getErrorCode());
             }
 
-            FarmPoolPO po = helper.getBean(chainId, tx, txData);
+            FarmPoolPO po = helper.getBean(chain.getChainId(), tx, txData);
             batchInfo.getFarmTempManager().putFarm(po);
 
             // 装填执行结果

@@ -1,5 +1,6 @@
 package network.nerve.swap.model.dto.stable;
 
+import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.po.stable.StableSwapPairPo;
 
 import java.math.BigInteger;
@@ -78,13 +79,16 @@ public class StableSwapPairDTO {
         sb.append("\"po\":")
                 .append(po.toString());
         sb.append(",\"totalLP\":")
-                .append(totalLP);
-        sb.append(",\"balances\":")
-                .append(Arrays.deepToString(balances));
-        sb.append(",\"blockTimeLast\":")
-                .append(blockTimeLast);
+                .append('\"').append(totalLP).append('\"');
+        sb.append(",\"balances\": [");
+        for (BigInteger balance : balances) {
+            sb.append('\"').append(balance).append("\",");
+        }
+        sb.deleteCharAt(sb.length() - 1);
+        sb.append("],\"blockTimeLast\":")
+                .append('\"').append(blockTimeLast).append('\"');
         sb.append(",\"blockHeightLast\":")
-                .append(blockHeightLast);
+                .append('\"').append(blockHeightLast).append('\"');
         sb.append('}');
         return sb.toString();
     }

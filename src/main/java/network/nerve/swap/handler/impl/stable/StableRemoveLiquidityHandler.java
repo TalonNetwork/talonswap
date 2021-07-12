@@ -34,8 +34,8 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.crypto.HexUtil;
 import io.nuls.core.exception.NulsException;
 import io.nuls.core.log.Log;
-import network.nerve.swap.cache.LedgerAssetCacher;
-import network.nerve.swap.cache.StableSwapPairCacher;
+import network.nerve.swap.cache.LedgerAssetCache;
+import network.nerve.swap.cache.StableSwapPairCache;
 import network.nerve.swap.constant.SwapErrorCode;
 import network.nerve.swap.handler.ISwapInvoker;
 import network.nerve.swap.handler.SwapHandlerConstraints;
@@ -73,9 +73,9 @@ public class StableRemoveLiquidityHandler extends SwapHandlerConstraints {
     @Autowired
     private ChainManager chainManager;
     @Autowired
-    private StableSwapPairCacher stableSwapPairCacher;
+    private StableSwapPairCache stableSwapPairCache;
     @Autowired
-    private LedgerAssetCacher ledgerAssetCacher;
+    private LedgerAssetCache ledgerAssetCache;
 
     @Override
     public Integer txType() {
@@ -100,7 +100,7 @@ public class StableRemoveLiquidityHandler extends SwapHandlerConstraints {
             txData.parse(tx.getTxData(), 0);
 
             String pairAddress = AddressTool.getStringAddressByBytes(dto.getPairAddress());
-            if (!stableSwapPairCacher.isExist(pairAddress)) {
+            if (!stableSwapPairCache.isExist(pairAddress)) {
                 throw new NulsException(SwapErrorCode.PAIR_NOT_EXIST);
             }
             // 销毁的LP资产
@@ -219,6 +219,9 @@ public class StableRemoveLiquidityHandler extends SwapHandlerConstraints {
             throw new NulsException(SwapErrorCode.REMOVE_LIQUIDITY_FROMS_ERROR);
         }
         CoinFrom from = froms.get(0);
+        if (!from.getAmount().equals(to.getAmount())) {
+            throw new NulsException(SwapErrorCode.INVALID_AMOUNTS);
+        }
         byte[] userAddress = from.getAddress();
         return new StableRemoveLiquidityDTO(userAddress, pairAddress, to.getAmount());
     }

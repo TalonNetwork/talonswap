@@ -30,7 +30,7 @@ import io.nuls.core.core.annotation.Component;
 import io.nuls.core.log.Log;
 import io.nuls.core.rockdb.constant.DBErrorCode;
 import io.nuls.core.rockdb.service.RocksDBService;
-import network.nerve.swap.cache.impl.FarmCacherImpl;
+import network.nerve.swap.cache.impl.FarmCacheImpl;
 import network.nerve.swap.config.ConfigBean;
 import network.nerve.swap.config.SwapConfig;
 import network.nerve.swap.constant.SwapDBConstant;
@@ -81,7 +81,7 @@ public class ChainManager {
     }
 
     private void initCache(Chain chain) {
-        FarmCacherImpl.init(chain);
+        FarmCacheImpl.init(chain);
     }
 
     private void initTable(Chain chain) {

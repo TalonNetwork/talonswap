@@ -32,8 +32,8 @@ import io.nuls.core.rpc.model.ModuleE;
 import network.nerve.swap.JunitCase;
 import network.nerve.swap.JunitExecuter;
 import network.nerve.swap.JunitUtils;
-import network.nerve.swap.cache.SwapPairCacher;
-import network.nerve.swap.cache.impl.SwapPairCacherImpl;
+import network.nerve.swap.cache.SwapPairCache;
+import network.nerve.swap.cache.impl.SwapPairCacheImpl;
 import network.nerve.swap.config.ConfigBean;
 import network.nerve.swap.handler.ISwapHandler;
 import network.nerve.swap.handler.impl.CreatePairHandler;
@@ -70,7 +70,7 @@ import static org.junit.Assert.assertNotNull;
 public class CreatePairHandlerTest {
 
     private CreatePairHandler createPairHandler;
-    private SwapPairCacher swapPairCacher;
+    private SwapPairCache swapPairCache;
     private Chain chain;
     private NerveToken token0;
     private NerveToken token1;
@@ -79,8 +79,8 @@ public class CreatePairHandlerTest {
     @Before
     public void init() {
         createPairHandler = new CreatePairHandler();
-        swapPairCacher = new SwapPairCacherImpl();
-        SpringLiteContext.putBean(swapPairCacher.getClass().getName(), swapPairCacher);
+        swapPairCache = new SwapPairCacheImpl();
+        SpringLiteContext.putBean(swapPairCache.getClass().getName(), swapPairCache);
         int chainId = 5;
         long blockHeight = 20L;
         token0 = new NerveToken(chainId, 1);
@@ -110,8 +110,8 @@ public class CreatePairHandlerTest {
         chainManager.getChainMap().put(chainId, chain);
 
         BeanUtilTest.setBean(createPairHandler, "chainManager", chainManager);
-        BeanUtilTest.setBean(swapPairCacher, "chainManager", chainManager);
-        BeanUtilTest.setBean(swapPairCacher, "swapPairStorageService", new SwapPairStorageService() {
+        BeanUtilTest.setBean(swapPairCache, "chainManager", chainManager);
+        BeanUtilTest.setBean(swapPairCache, "swapPairStorageService", new SwapPairStorageService() {
             @Override
             public boolean savePair(byte[] address, SwapPairPO po) throws Exception {
                 return true;
@@ -151,7 +151,7 @@ public class CreatePairHandlerTest {
                 return true;
             }
         });
-        BeanUtilTest.setBean(swapPairCacher, "swapPairReservesStorageService", new SwapPairReservesStorageService() {
+        BeanUtilTest.setBean(swapPairCache, "swapPairReservesStorageService", new SwapPairReservesStorageService() {
             @Override
             public boolean savePairReserves(String address, SwapPairReservesPO dto) throws Exception {
                 return true;
@@ -173,6 +173,11 @@ public class CreatePairHandlerTest {
                 return true;
             }
         });
+    }
+
+    @Test
+    public void swapPairAddress() {
+        System.out.println(SwapUtils.getStringPairAddress(5, new NerveToken(5, 1), new NerveToken(5, 6)));
     }
 
     @Test

@@ -97,33 +97,41 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
             if (blockTime > deadline) {
                 throw new NulsException(SwapErrorCode.EXPIRED);
             }
-            NerveToken tokenA = dto.getTokenA();
-            NerveToken tokenB = dto.getTokenB();
-
+            if (!AddressTool.validAddress(chainId, txData.getTo())) {
+                throw new NulsException(SwapErrorCode.RECEIVE_ADDRESS_ERROR);
+            }
+            NerveToken tokenA = txData.getTokenA();
+            NerveToken tokenB = txData.getTokenB();
+            BigInteger amountA, amountB;
+            if (tokenA.equals(dto.getTokenX())) {
+                amountA = dto.getAmountX();
+                amountB = dto.getAmountY();
+            } else {
+                amountB = dto.getAmountX();
+                amountA = dto.getAmountY();
+            }
             // 计算用户实际注入的资产，以及用户获取的LP资产
             IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(dto.getPairAddress()));
             RealAddLiquidityOrderDTO orderDTO = SwapUtils.calcAddLiquidity(chainId, iPairFactory, tokenA, tokenB,
-                    dto.getUserLiquidityA(), dto.getUserLiquidityB(),
-                    txData.getAmountAMin(), txData.getAmountBMin());
-
-            BigInteger[] _realAddLiquidity;
+                    amountA, amountB, txData.getAmountAMin(), txData.getAmountBMin());
+            BigInteger[] _realAmount;
             BigInteger[] _reserves;
             BigInteger[] _refund;
             NerveToken[] tokens = SwapUtils.tokenSort(tokenA, tokenB);
             boolean firstTokenA = tokens[0].equals(tokenA);
             if (firstTokenA) {
-                _realAddLiquidity = new BigInteger[]{orderDTO.getRealAddLiquidityA(), orderDTO.getRealAddLiquidityB()};
+                _realAmount = new BigInteger[]{orderDTO.getRealAmountA(), orderDTO.getRealAmountB()};
                 _reserves = new BigInteger[]{orderDTO.getReservesA(), orderDTO.getReservesB()};
                 _refund = new BigInteger[]{orderDTO.getRefundA(), orderDTO.getRefundB()};
             } else {
-                _realAddLiquidity = new BigInteger[]{orderDTO.getRealAddLiquidityB(), orderDTO.getRealAddLiquidityA()};
+                _realAmount = new BigInteger[]{orderDTO.getRealAmountB(), orderDTO.getRealAmountA()};
                 _reserves = new BigInteger[]{orderDTO.getReservesB(), orderDTO.getReservesA()};
                 _refund = new BigInteger[]{orderDTO.getRefundB(), orderDTO.getRefundA()};
             }
 
             // 整合计算数据
             AddLiquidityBus bus = new AddLiquidityBus(
-                    _realAddLiquidity[0], _realAddLiquidity[1],
+                    _realAmount[0], _realAmount[1],
                     orderDTO.getLiquidity(),
                     _reserves[0], _reserves[1],
                     _refund[0], _refund[1]
@@ -148,7 +156,7 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
             // 更新临时余额
             tempBalanceManager.refreshTempBalance(chainId, sysDealTx, blockTime);
             // 更新临时数据
-            pair.update(orderDTO.getLiquidity(), _realAddLiquidity[0].add(_reserves[0]), _realAddLiquidity[1].add(_reserves[1]), _reserves[0], _reserves[1], blockHeight, blockTime);
+            pair.update(orderDTO.getLiquidity(), _realAmount[0].add(_reserves[0]), _realAmount[1].add(_reserves[1]), _reserves[0], _reserves[1], blockHeight, blockTime);
         } catch (Exception e) {
             Log.error(e);
             // 装填失败的执行结果
@@ -163,27 +171,27 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
                 return result;
             }
             // 组装系统退还交易
-            NerveToken tokenA = dto.getTokenA();
-            NerveToken tokenB = dto.getTokenB();
+            NerveToken tokenX = dto.getTokenX();
+            NerveToken tokenY = dto.getTokenY();
             SwapSystemRefundTransaction refund = new SwapSystemRefundTransaction(tx.getHash().toHex(), blockTime);
             LedgerTempBalanceManager tempBalanceManager = batchInfo.getLedgerTempBalanceManager();
-            LedgerBalance balanceA = tempBalanceManager.getBalance(dto.getPairAddress(), tokenA.getChainId(), tokenA.getAssetId()).getData();
-            LedgerBalance balanceB = tempBalanceManager.getBalance(dto.getPairAddress(), tokenB.getChainId(), tokenB.getAssetId()).getData();
+            LedgerBalance balanceX = tempBalanceManager.getBalance(dto.getPairAddress(), tokenX.getChainId(), tokenX.getAssetId()).getData();
+            LedgerBalance balanceY = tempBalanceManager.getBalance(dto.getPairAddress(), tokenY.getChainId(), tokenY.getAssetId()).getData();
             Transaction refundTx =
                 refund.newFrom()
-                        .setFrom(balanceA, dto.getUserLiquidityA()).endFrom()
+                        .setFrom(balanceX, dto.getAmountX()).endFrom()
                       .newFrom()
-                        .setFrom(balanceB, dto.getUserLiquidityB()).endFrom()
+                        .setFrom(balanceY, dto.getAmountY()).endFrom()
                       .newTo()
-                        .setToAddress(dto.getFromA())
-                        .setToAssetsChainId(tokenA.getChainId())
-                        .setToAssetsId(tokenA.getAssetId())
-                        .setToAmount(dto.getUserLiquidityA()).endTo()
+                        .setToAddress(dto.getFromX())
+                        .setToAssetsChainId(tokenX.getChainId())
+                        .setToAssetsId(tokenX.getAssetId())
+                        .setToAmount(dto.getAmountX()).endTo()
                       .newTo()
-                        .setToAddress(dto.getFromB())
-                        .setToAssetsChainId(tokenB.getChainId())
-                        .setToAssetsId(tokenB.getAssetId())
-                        .setToAmount(dto.getUserLiquidityB()).endTo()
+                        .setToAddress(dto.getFromY())
+                        .setToAssetsChainId(tokenY.getChainId())
+                        .setToAssetsId(tokenY.getAssetId())
+                        .setToAmount(dto.getAmountY()).endTo()
                       .build();
             result.setSubTx(refundTx);
             String refundTxStr = SwapUtils.nulsData2Hex(refundTx);
@@ -209,7 +217,7 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
             sysDeal.newFrom()
                     .setFrom(balanceA, bus.getRefundA()).endFrom();
             sysDeal.newTo()
-                    .setToAddress(dto.getFromA())
+                    .setToAddress(dto.getFromX())
                     .setToAssetsChainId(tokenA.getChainId())
                     .setToAssetsId(tokenA.getAssetId())
                     .setToAmount(bus.getRefundA()).endTo();
@@ -219,7 +227,7 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
             sysDeal.newFrom()
                     .setFrom(balanceB, bus.getRefundB()).endFrom();
             sysDeal.newTo()
-                    .setToAddress(dto.getFromB())
+                    .setToAddress(dto.getFromY())
                     .setToAssetsChainId(tokenB.getChainId())
                     .setToAssetsId(tokenB.getAssetId())
                     .setToAmount(bus.getRefundB()).endTo();
@@ -237,15 +245,15 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
         if (tos.size() != 2) {
             throw new NulsException(SwapErrorCode.ADD_LIQUIDITY_TOS_ERROR);
         }
-        CoinTo coinToA = tos.get(0);
-        CoinTo coinToB = tos.get(1);
-        if (coinToA.getLockTime() != 0 || coinToB.getLockTime() != 0) {
+        CoinTo coinToX = tos.get(0);
+        CoinTo coinToY = tos.get(1);
+        if (coinToX.getLockTime() != 0 || coinToY.getLockTime() != 0) {
             throw new NulsException(SwapErrorCode.ADD_LIQUIDITY_AMOUNT_LOCK_ERROR);
         }
-        NerveToken tokenA = new NerveToken(coinToA.getAssetsChainId(), coinToA.getAssetsId());
-        NerveToken tokenB = new NerveToken(coinToB.getAssetsChainId(), coinToB.getAssetsId());
-        byte[] pairAddress = SwapUtils.getPairAddress(chainId, tokenA, tokenB);
-        if (!Arrays.equals(coinToA.getAddress(), pairAddress) || !Arrays.equals(coinToB.getAddress(), pairAddress)) {
+        NerveToken tokenX = new NerveToken(coinToX.getAssetsChainId(), coinToX.getAssetsId());
+        NerveToken tokenY = new NerveToken(coinToY.getAssetsChainId(), coinToY.getAssetsId());
+        byte[] pairAddress = SwapUtils.getPairAddress(chainId, tokenX, tokenY);
+        if (!Arrays.equals(coinToX.getAddress(), pairAddress) || !Arrays.equals(coinToY.getAddress(), pairAddress)) {
             throw new NulsException(SwapErrorCode.PAIR_INCONSISTENCY);
         }
 
@@ -253,17 +261,17 @@ public class AddLiquidityHandler extends SwapHandlerConstraints {
         if (froms.size() != 2) {
             throw new NulsException(SwapErrorCode.ADD_LIQUIDITY_FROMS_ERROR);
         }
-        byte[] fromA, fromB;
+        byte[] fromX, fromY;
         CoinFrom from0 = froms.get(0);
         CoinFrom from1 = froms.get(1);
-        if (from0.getAssetsChainId() == coinToA.getAssetsChainId() && from0.getAssetsId() == coinToA.getAssetsId()) {
-            fromA = from0.getAddress();
-            fromB = from1.getAddress();
+        if (from0.getAssetsChainId() == coinToX.getAssetsChainId() && from0.getAssetsId() == coinToX.getAssetsId()) {
+            fromX = from0.getAddress();
+            fromY = from1.getAddress();
         } else {
-            fromA = from1.getAddress();
-            fromB = from0.getAddress();
+            fromX = from1.getAddress();
+            fromY = from0.getAddress();
         }
-        return new AddLiquidityDTO(fromA, fromB, pairAddress, tokenA, tokenB, coinToA.getAmount(), coinToB.getAmount());
+        return new AddLiquidityDTO(fromX, fromY, pairAddress, tokenX, tokenY, coinToX.getAmount(), coinToY.getAmount());
     }
 
 

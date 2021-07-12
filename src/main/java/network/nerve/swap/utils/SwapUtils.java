@@ -42,12 +42,15 @@ import network.nerve.swap.model.dto.RealAddLiquidityOrderDTO;
 import network.nerve.swap.model.po.FarmPoolPO;
 import network.nerve.swap.model.po.SwapPairPO;
 import network.nerve.swap.model.po.stable.StableSwapPairPo;
-import network.nerve.swap.model.vo.SwapPairVO;
 import network.nerve.swap.model.vo.RouteVO;
+import network.nerve.swap.model.vo.SwapPairVO;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static network.nerve.swap.constant.SwapConstant.*;
@@ -198,10 +201,10 @@ public class SwapUtils {
         BigInteger[] _reserves = SwapUtils.getReserves(chainId, iPairFactory, tokenA, tokenB);
         BigInteger reserveA = _reserves[0];
         BigInteger reserveB = _reserves[1];
-        BigInteger[] realAddLiquidity;
+        BigInteger[] realAmount;
         BigInteger[] refund;
         if (reserveA.equals(BigInteger.ZERO) && reserveB.equals(BigInteger.ZERO)) {
-            realAddLiquidity = new BigInteger[]{amountADesired, amountBDesired};
+            realAmount = new BigInteger[]{amountADesired, amountBDesired};
             refund = new BigInteger[]{BigInteger.ZERO, BigInteger.ZERO};
         } else {
             BigInteger amountBOptimal = SwapUtils.quote(amountADesired, reserveA, reserveB);
@@ -209,7 +212,7 @@ public class SwapUtils {
                 if (amountBOptimal.compareTo(amountBMin) < 0) {
                     throw new NulsException(INSUFFICIENT_B_AMOUNT);
                 }
-                realAddLiquidity = new BigInteger[]{amountADesired, amountBOptimal};
+                realAmount = new BigInteger[]{amountADesired, amountBOptimal};
                 refund = new BigInteger[]{BigInteger.ZERO, amountBDesired.subtract(amountBOptimal)};
             } else {
                 BigInteger amountAOptimal = SwapUtils.quote(amountBDesired, reserveB, reserveA);
@@ -219,30 +222,28 @@ public class SwapUtils {
                 if (amountAOptimal.compareTo(amountAMin) < 0) {
                     throw new NulsException(INSUFFICIENT_A_AMOUNT);
                 }
-                realAddLiquidity = new BigInteger[]{amountAOptimal, amountBDesired};
+                realAmount = new BigInteger[]{amountAOptimal, amountBDesired};
                 refund = new BigInteger[]{amountADesired.subtract(amountAOptimal), BigInteger.ZERO};
             }
         }
-        NerveToken[] tokens = SwapUtils.tokenSort(tokenA, tokenB);
-        realAddLiquidity = tokens[0].equals(tokenA) ? realAddLiquidity : new BigInteger[]{realAddLiquidity[1], realAddLiquidity[0]};
-        BigInteger[] reserves = tokens[0].equals(tokenA) ? new BigInteger[]{reserveA, reserveB} : new BigInteger[]{reserveB, reserveA};
+        BigInteger[] reserves = new BigInteger[]{reserveA, reserveB};
 
         // 计算用户获取的LP资产
         IPair pair = iPairFactory.getPair(SwapUtils.getStringPairAddress(chainId, tokenA, tokenB));
         BigInteger totalSupply = pair.totalSupply();
         BigInteger liquidity;
         if (totalSupply.equals(BigInteger.ZERO)) {
-            liquidity = realAddLiquidity[0].multiply(realAddLiquidity[1]).sqrt().subtract(SwapConstant.MINIMUM_LIQUIDITY);
+            liquidity = realAmount[0].multiply(realAmount[1]).sqrt().subtract(SwapConstant.MINIMUM_LIQUIDITY);
         } else {
-            BigInteger _liquidity0 = realAddLiquidity[0].multiply(totalSupply).divide(reserves[0]);
-            BigInteger _liquidity1 = realAddLiquidity[1].multiply(totalSupply).divide(reserves[1]);
+            BigInteger _liquidity0 = realAmount[0].multiply(totalSupply).divide(reserves[0]);
+            BigInteger _liquidity1 = realAmount[1].multiply(totalSupply).divide(reserves[1]);
             liquidity = _liquidity0.compareTo(_liquidity1) < 0 ? _liquidity0 : _liquidity1;
         }
         if (liquidity.compareTo(BigInteger.ZERO) < 0) {
             throw new NulsException(SwapErrorCode.INSUFFICIENT_LIQUIDITY_MINTED);
         }
 
-        return new RealAddLiquidityOrderDTO(realAddLiquidity, reserves, refund, liquidity);
+        return new RealAddLiquidityOrderDTO(realAmount, reserves, refund, liquidity);
     }
 
     public static RemoveLiquidityBus calRemoveLiquidityBusiness(
@@ -289,41 +290,29 @@ public class SwapUtils {
     }
 
     public static StableAddLiquidityBus calStableAddLiquididy(int chainId, IPairFactory iPairFactory, String pairAddress, byte[] from, BigInteger[] amounts, byte[] to) throws NulsException {
-
-        // 获取用户添加流动性的币中数量最小的
-        BigInteger min = SwapUtils.min(amounts);
-        int length = amounts.length;
-        // 计算实际添加的资产，退还多余的资产
-        BigInteger[] realAmounts;
-        BigInteger[] refundAmounts = null;
-        if (min.compareTo(BigInteger.ZERO) > 0) {
-            realAmounts = new BigInteger[length];
-            refundAmounts = new BigInteger[length];
-            for (int i = 0; i < length; i++) {
-                BigInteger amount = amounts[i];
-                if (amount.equals(BigInteger.ZERO)) {
-                    refundAmounts[i] = amount;
-                    realAmounts[i] = amount;
-                } else {
-                    refundAmounts[i] = amount.subtract(min);
-                    realAmounts[i] = min;
-                }
-            }
-        } else {
-            realAmounts = amounts;
+        if (!AddressTool.validAddress(chainId, to)) {
+            throw new NulsException(SwapErrorCode.RECEIVE_ADDRESS_ERROR);
         }
+        // 用户添加多少资产，就往池子里填入多少资产
+        BigInteger[] realAmounts = amounts;
+        BigInteger[] refundAmounts = emptyFillZero(new BigInteger[amounts.length]);
+
         // 计算用户获取的LP资产
         IStablePair stablePair = iPairFactory.getStablePair(pairAddress);
+        StableSwapPairPo pairPo = stablePair.getPair();
+        int[] decimalsOfCoins = pairPo.getDecimalsOfCoins();
         BigInteger[] balances = stablePair.getBalances();
         BigInteger totalSupply = stablePair.totalSupply();
         BigInteger liquidity;
+        // 计算总量时，把精度都填充到18位
         if (totalSupply.equals(BigInteger.ZERO)) {
-            liquidity = SwapUtils.getCumulativeAmounts(realAmounts);
+            liquidity = SwapUtils.getCumulativeAmountsOfStableSwap(realAmounts, decimalsOfCoins);
         } else {
-            // 获取池子总币量
-            BigInteger poolAmounts = SwapUtils.getCumulativeAmounts(balances);
-            BigInteger currentInAmounts = SwapUtils.getCumulativeAmounts(realAmounts);
-            liquidity = currentInAmounts.multiply(totalSupply).divide(poolAmounts);
+            // 计算池子总量
+            BigInteger poolTotal = SwapUtils.getCumulativeAmountsOfStableSwap(balances, decimalsOfCoins);
+            // 计算用户本次添加总量
+            BigInteger currentInTotal = SwapUtils.getCumulativeAmountsOfStableSwap(realAmounts, decimalsOfCoins);
+            liquidity = currentInTotal.multiply(totalSupply).divide(poolTotal);
         }
         StableAddLiquidityBus bus = new StableAddLiquidityBus(from, realAmounts, liquidity, balances, refundAmounts, to);
         bus.setPreBlockHeight(stablePair.getBlockHeightLast());
@@ -334,16 +323,20 @@ public class SwapUtils {
     public static StableRemoveLiquidityBus calStableRemoveLiquidityBusiness(
             int chainId, IPairFactory iPairFactory,
             BigInteger liquidity, byte[] indexs, byte[] pairAddressBytes, byte[] to) throws NulsException {
-
+        if (!AddressTool.validAddress(chainId, to)) {
+            throw new NulsException(SwapErrorCode.RECEIVE_ADDRESS_ERROR);
+        }
         // 计算用户赎回的资产
         String pairAddress = AddressTool.getStringAddressByBytes(pairAddressBytes);
         IStablePair stablePair = iPairFactory.getStablePair(pairAddress);
+        StableSwapPairPo pairPo = stablePair.getPair();
+        int[] decimalsOfCoins = pairPo.getDecimalsOfCoins();
         BigInteger[] balances = stablePair.getBalances();
         BigInteger totalSupply = stablePair.totalSupply();
         // 检查indexs合法与重复
-        StableSwapPairPo pairPo = stablePair.getPair();
         NerveToken[] coins = pairPo.getCoins();
         int length = coins.length;
+        // 检查参数中`indexs`是否合法
         // indexs本身是等差数列，根据等差数列求和公式算出期望值
         int expect = (length - 1) * length / 2;
         // 累加indexs的实际值
@@ -357,15 +350,15 @@ public class SwapUtils {
         if (fact != expect) {
             throw new NulsException(SwapErrorCode.INVALID_COINS);
         }
-        // 获取池子总币量
-        BigInteger poolAmounts = SwapUtils.getCumulativeAmounts(balances);
-        // 用户可赎回资产数量
-        BigInteger totalReceives = poolAmounts.multiply(liquidity).divide(totalSupply);
+        // 获取池子总量
+        BigInteger poolTotal = SwapUtils.getCumulativeAmountsOfStableSwap(balances, decimalsOfCoins);
+        // 用户可赎回资产数量(PRECISION_MUL)
+        BigInteger totalReceives = poolTotal.multiply(liquidity).divide(totalSupply);
         final BigInteger finalTotalReceives = totalReceives;
         // 按照用户选择的提取顺序，扣减池子数量
         BigInteger[] receives = new BigInteger[length];
         for (byte index : indexs) {
-            BigInteger balance = balances[index];
+            BigInteger balance = balances[index].multiply(BigInteger.TEN.pow(18 - decimalsOfCoins[index]));
             if (totalReceives.compareTo(balance) < 0) {
                 receives[index] = totalReceives;
                 break;
@@ -382,6 +375,15 @@ public class SwapUtils {
         if (!_totalReceives.equals(finalTotalReceives)) {
             throw new NulsException(SwapErrorCode.INVALID_AMOUNTS);
         }
+        // 还原receives <= 以上代码计算用户可赎回资产数量时，把精度都填充到了18位，最终结果按每个coin的实际精度，还原数值
+        for (int i = 0; i < length; i++) {
+            BigInteger receive = receives[i];
+            if (receive.equals(BigInteger.ZERO)) {
+                continue;
+            }
+            receives[i] = receive.divide(BigInteger.TEN.pow(18 - decimalsOfCoins[i]));
+        }
+
         StableRemoveLiquidityBus bus = new StableRemoveLiquidityBus(receives, balances, liquidity, pairAddressBytes, to);
         bus.setPreBlockHeight(stablePair.getBlockHeightLast());
         bus.setPreBlockTime(stablePair.getBlockTimeLast());
@@ -390,16 +392,24 @@ public class SwapUtils {
 
     public static StableSwapTradeBus calStableSwapTradeBusiness(
             int chainId, IPairFactory iPairFactory,
-            BigInteger[] amountsIn, byte tokenOutIndex, byte[] pairAddressBytes, byte[] to) throws NulsException {
+            BigInteger[] amountsIn, byte tokenOutIndex, byte[] pairAddressBytes, byte[] to, byte[] feeTo) throws NulsException {
+        if (!AddressTool.validAddress(chainId, to)) {
+            throw new NulsException(SwapErrorCode.RECEIVE_ADDRESS_ERROR);
+        }
+        if (feeTo != null && !AddressTool.validAddress(chainId, feeTo)) {
+            throw new NulsException(SwapErrorCode.FEE_RECEIVE_ADDRESS_ERROR);
+        }
         String pairAddress = AddressTool.getStringAddressByBytes(pairAddressBytes);
         IStablePair stablePair = iPairFactory.getStablePair(pairAddress);
         StableSwapPairPo pairPo = stablePair.getPair();
+        int[] decimalsOfCoins = pairPo.getDecimalsOfCoins();
         NerveToken[] coins = pairPo.getCoins();
         int length = coins.length;
         BigInteger[] unLiquidityAwardFees = new BigInteger[length];
         BigInteger[] changeBalances = new BigInteger[length];
         BigInteger[] balances = stablePair.getBalances();
-        BigInteger outBalance = balances[tokenOutIndex];
+        // 把精度填充到18位
+        BigInteger outBalance = balances[tokenOutIndex].multiply(BigInteger.TEN.pow(18 - decimalsOfCoins[tokenOutIndex]));
         BigInteger totalAmountOut = BigInteger.ZERO;
         for (int i = 0; i < length; i++) {
             BigInteger amountIn = amountsIn[i];
@@ -408,7 +418,10 @@ public class SwapUtils {
                 continue;
             }
             BigInteger coinFee = amountIn.multiply(SwapContext.FEE_PERMILLAGE_STABLE_SWAP).divide(BI_1000);
-            BigInteger amountOut = amountIn.subtract(coinFee);
+            amountIn = amountIn.subtract(coinFee);
+            // 把精度填充到18位
+            BigInteger _amountIn = amountIn.multiply(BigInteger.TEN.pow(18 - decimalsOfCoins[i]));
+            BigInteger amountOut = _amountIn;
             if (outBalance.compareTo(amountOut) < 0) {
                 throw new NulsException(SwapErrorCode.INSUFFICIENT_OUTPUT_AMOUNT);
             }
@@ -416,6 +429,9 @@ public class SwapUtils {
             outBalance = outBalance.subtract(amountOut);
             totalAmountOut = totalAmountOut.add(amountOut);
         }
+        // 还原`totalAmountOut` <= 以上代码计算用户买进资产数量时，把精度填充到了18位，最终结果按实际精度，还原数值
+        totalAmountOut = totalAmountOut.divide(BigInteger.TEN.pow(18 - decimalsOfCoins[tokenOutIndex]));
+
         changeBalances = SwapUtils.emptyFillZero(changeBalances);
         for (int i = 0; i < length; i++) {
             changeBalances[i] = changeBalances[i].add(amountsIn[i]).subtract(unLiquidityAwardFees[i]);
@@ -446,6 +462,7 @@ public class SwapUtils {
             NerveToken tokenOut = pair.getToken0().equals(tokenIn) ? pair.getToken1() : pair.getToken0();
             if (containsCurrency(currentPath, tokenOut)) continue;
             BigInteger[] reserves = SwapUtils.getReserves(chainId, iPairFactory, tokenIn, tokenOut);
+            if (BigInteger.ZERO.equals(reserves[0]) || BigInteger.ZERO.equals(reserves[1])) continue;
             BigInteger amountOut = SwapUtils.getAmountOut(tokenAmountIn.getAmount(), reserves[0], reserves[1]);
 
             if (tokenOut.equals(out)) {
@@ -655,9 +672,31 @@ public class SwapUtils {
         return result;
     }
 
+    public static BigInteger getCumulativeAmountsOfStableSwap(BigInteger[] amounts, int[] precisions) {
+        BigInteger result = BigInteger.ZERO;
+        if (amounts == null) {
+            return result;
+        }
+        int length = amounts.length;
+        BigInteger amount;
+        int exponent;
+        for (int i = 0; i < length; i++) {
+            amount = amounts[i];
+            exponent = 18 - precisions[i];
+            if (amount != null) {
+                if (exponent == 0) {
+                    result = result.add(amount);
+                } else {
+                    result = result.add(amount.multiply(BigInteger.TEN.pow(exponent)));
+                }
+            }
+        }
+        return result;
+    }
+
     public static BigInteger min(BigInteger[] amounts) {
         if (amounts == null) {
-            return BigInteger.ZERO;
+            return null;
         }
         BigInteger min = null;
         for (BigInteger amount : amounts) {

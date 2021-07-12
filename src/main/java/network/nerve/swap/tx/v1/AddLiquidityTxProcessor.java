@@ -19,6 +19,7 @@ import network.nerve.swap.help.IPair;
 import network.nerve.swap.help.IPairFactory;
 import network.nerve.swap.manager.ChainManager;
 import network.nerve.swap.model.Chain;
+import network.nerve.swap.model.NerveToken;
 import network.nerve.swap.model.bo.SwapResult;
 import network.nerve.swap.model.business.AddLiquidityBus;
 import network.nerve.swap.model.dto.AddLiquidityDTO;
@@ -96,14 +97,29 @@ public class AddLiquidityTxProcessor implements TransactionProcessor {
                 errorCode = SwapErrorCode.EXPIRED.getCode();
                 continue;
             }
+            if (!AddressTool.validAddress(chainId, txData.getTo())) {
+                logger.error("RECEIVE_ADDRESS_ERROR! hash-{}", tx.getHash().toHex());
+                failsList.add(tx);
+                errorCode = SwapErrorCode.RECEIVE_ADDRESS_ERROR.getCode();
+                continue;
+            }
+            NerveToken tokenA = txData.getTokenA();
+            NerveToken tokenB = txData.getTokenB();
             CoinData coinData;
             AddLiquidityDTO dto;
             try {
                 coinData = tx.getCoinDataInstance();
                 dto = addLiquidityHandler.getAddLiquidityInfo(chainId, coinData);
-                SwapUtils.calcAddLiquidity(chainId, iPairFactory, dto.getTokenA(),dto.getTokenB(),
-                                dto.getUserLiquidityA(), dto.getUserLiquidityB(),
-                                amountAMin, amountBMin);
+                BigInteger amountA, amountB;
+                if (tokenA.equals(dto.getTokenX())) {
+                    amountA = dto.getAmountX();
+                    amountB = dto.getAmountY();
+                } else {
+                    amountB = dto.getAmountX();
+                    amountA = dto.getAmountY();
+                }
+                SwapUtils.calcAddLiquidity(chainId, iPairFactory, tokenA, tokenB,
+                        amountA, amountB, amountAMin, amountBMin);
             } catch (NulsException e) {
                 Log.error(e);
                 failsList.add(tx);
@@ -127,10 +143,12 @@ public class AddLiquidityTxProcessor implements TransactionProcessor {
             NulsLogger logger = chain.getLogger();
             Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
+                logger.info("[commit] Swap Add Liquidity, hash: {}", tx.getHash().toHex());
                 // 从执行结果中提取业务数据
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 CoinData coinData = tx.getCoinDataInstance();
                 IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(coinData.getTo().get(0).getAddress()));
@@ -138,8 +156,6 @@ public class AddLiquidityTxProcessor implements TransactionProcessor {
 
                 // 更新Pair的资金池和发行总量
                 pair.update(bus.getLiquidity(), bus.getRealAddAmount0().add(bus.getReserve0()), bus.getRealAddAmount1().add(bus.getReserve1()), bus.getReserve0(), bus.getReserve1(), blockHeader.getHeight(), blockHeader.getTime());
-                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
-                logger.info("[commit] Swap Add Liquidity, hash: {}", tx.getHash().toHex());
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -160,10 +176,10 @@ public class AddLiquidityTxProcessor implements TransactionProcessor {
             for (Transaction tx : txs) {
                 SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    return true;
+                    continue;
                 }
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 CoinData coinData = tx.getCoinDataInstance();
                 IPair pair = iPairFactory.getPair(AddressTool.getStringAddressByBytes(coinData.getTo().get(0).getAddress()));

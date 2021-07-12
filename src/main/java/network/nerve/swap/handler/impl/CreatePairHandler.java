@@ -87,7 +87,7 @@ public class CreatePairHandler extends SwapHandlerConstraints {
             result.setTxTime(tx.getTime());
             result.setBlockHeight(blockHeight);
 
-        } catch (NulsException e) {
+        } catch (Exception e) {
             Log.error(e);
             // 装填失败的执行结果
             result.setTxType(txType());
@@ -95,7 +95,7 @@ public class CreatePairHandler extends SwapHandlerConstraints {
             result.setHash(tx.getHash().toHex());
             result.setTxTime(tx.getTime());
             result.setBlockHeight(blockHeight);
-            result.setErrorMessage(e.format());
+            result.setErrorMessage(e instanceof NulsException ? ((NulsException) e).format() : e.getMessage());
         }
         batchInfo.getSwapResultMap().put(tx.getHash().toHex(), result);
         return result;

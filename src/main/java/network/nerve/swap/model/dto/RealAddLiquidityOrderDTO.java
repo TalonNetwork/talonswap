@@ -31,17 +31,17 @@ import java.math.BigInteger;
  */
 public class RealAddLiquidityOrderDTO {
 
-    private BigInteger realAddLiquidityA;
-    private BigInteger realAddLiquidityB;
+    private BigInteger realAmountA;
+    private BigInteger realAmountB;
     private BigInteger reservesA;
     private BigInteger reservesB;
     private BigInteger refundA;
     private BigInteger refundB;
     private BigInteger liquidity;
 
-    public RealAddLiquidityOrderDTO(BigInteger[] realAddLiquidity, BigInteger[] reserves, BigInteger[] refund, BigInteger liquidity) {
-        this.realAddLiquidityA = realAddLiquidity[0];
-        this.realAddLiquidityB = realAddLiquidity[1];
+    public RealAddLiquidityOrderDTO(BigInteger[] realAmount, BigInteger[] reserves, BigInteger[] refund, BigInteger liquidity) {
+        this.realAmountA = realAmount[0];
+        this.realAmountB = realAmount[1];
         this.reservesA = reserves[0];
         this.reservesB = reserves[1];
         this.refundA = refund[0];
@@ -49,20 +49,20 @@ public class RealAddLiquidityOrderDTO {
         this.liquidity = liquidity;
     }
 
-    public BigInteger getRealAddLiquidityA() {
-        return realAddLiquidityA;
+    public BigInteger getRealAmountA() {
+        return realAmountA;
     }
 
-    public void setRealAddLiquidityA(BigInteger realAddLiquidityA) {
-        this.realAddLiquidityA = realAddLiquidityA;
+    public void setRealAmountA(BigInteger realAmountA) {
+        this.realAmountA = realAmountA;
     }
 
-    public BigInteger getRealAddLiquidityB() {
-        return realAddLiquidityB;
+    public BigInteger getRealAmountB() {
+        return realAmountB;
     }
 
-    public void setRealAddLiquidityB(BigInteger realAddLiquidityB) {
-        this.realAddLiquidityB = realAddLiquidityB;
+    public void setRealAmountB(BigInteger realAmountB) {
+        this.realAmountB = realAmountB;
     }
 
     public BigInteger getReservesA() {

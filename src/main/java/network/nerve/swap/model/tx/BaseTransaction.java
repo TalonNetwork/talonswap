@@ -27,12 +27,14 @@ import io.nuls.base.data.CoinData;
 import io.nuls.base.data.CoinFrom;
 import io.nuls.base.data.CoinTo;
 import io.nuls.base.data.Transaction;
+import io.nuls.core.model.StringUtils;
 import network.nerve.swap.manager.LedgerTempBalanceManager;
 import network.nerve.swap.model.bo.LedgerBalance;
 import network.nerve.swap.utils.SwapUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,28 +52,37 @@ public abstract class BaseTransaction {
     private List<CoinTo> tos = new ArrayList<>();
     private long time;
     private byte[] txData;
+    private String remark;
 
     public BaseTransaction newFrom() {
         this.coinFrom = new CoinFrom();
         return this;
     }
+
     public BaseTransaction setFromAddress(byte[] address) {
         coinFrom.setAddress(address);
         return this;
     }
+
     public BaseTransaction setFromAssetsChainId(int assetsChainId) {
         coinFrom.setAssetsChainId(assetsChainId);
         return this;
     }
+
     public BaseTransaction setFromAssetsId(int assetsId) {
         coinFrom.setAssetsId(assetsId);
         return this;
     }
+
     public BaseTransaction setFromAmount(BigInteger amount) {
         coinFrom.setAmount(amount);
         return this;
     }
+
     public BaseTransaction setFrom(LedgerBalance balance, BigInteger amount) {
+        if (balance.getBalance().compareTo(amount) < 0) {
+            throw new RuntimeException("balance not enough");
+        }
         coinFrom.setAddress(balance.getAddress());
         coinFrom.setAssetsChainId(balance.getAssetsChainId());
         coinFrom.setAssetsId(balance.getAssetsId());
@@ -79,19 +90,23 @@ public abstract class BaseTransaction {
         coinFrom.setAmount(amount);
         return this;
     }
+
     public BaseTransaction setFromNonce(byte[] nonce) {
         coinFrom.setNonce(nonce);
         return this;
     }
+
     public BaseTransaction setFromNonce(LedgerTempBalanceManager tempBalanceManager) {
         LedgerBalance ledgerBalance = tempBalanceManager.getBalance(coinFrom.getAddress(), coinFrom.getAssetsChainId(), coinFrom.getAssetsId()).getData();
         coinFrom.setNonce(ledgerBalance.getNonce());
         return this;
     }
+
     public BaseTransaction setFromLocked(byte locked) {
         coinFrom.setLocked(locked);
         return this;
     }
+
     public BaseTransaction endFrom() {
         froms.add(coinFrom);
         coinFrom = null;
@@ -102,22 +117,27 @@ public abstract class BaseTransaction {
         this.coinTo = new CoinTo();
         return this;
     }
+
     public BaseTransaction setToAddress(byte[] address) {
         coinTo.setAddress(address);
         return this;
     }
+
     public BaseTransaction setToAssetsChainId(int assetsChainId) {
         coinTo.setAssetsChainId(assetsChainId);
         return this;
     }
+
     public BaseTransaction setToAssetsId(int assetsId) {
         coinTo.setAssetsId(assetsId);
         return this;
     }
+
     public BaseTransaction setToAmount(BigInteger amount) {
         coinTo.setAmount(amount);
         return this;
     }
+
     public BaseTransaction setToLockTime(long lockTime) {
         coinTo.setLockTime(lockTime);
         return this;
@@ -128,6 +148,7 @@ public abstract class BaseTransaction {
         coinTo = null;
         return this;
     }
+
     public BaseTransaction setTime(long time) {
         this.time = time;
         return this;
@@ -143,11 +164,18 @@ public abstract class BaseTransaction {
 
     protected abstract BaseTransaction setTxData();
 
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+
     public Transaction build() {
         Transaction tx = new Transaction();
         tx.setType(txType);
         tx.setTime(time);
         tx.setTxData(txData);
+        if (StringUtils.isNotBlank(remark)) {
+            tx.setRemark(remark.getBytes(StandardCharsets.UTF_8));
+        }
         CoinData coinData = new CoinData();
         if (!froms.isEmpty()) {
             coinData.getFrom().addAll(froms);

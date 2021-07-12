@@ -114,15 +114,16 @@ public class CreatePairTxProcessor implements TransactionProcessor {
             NulsLogger logger = chain.getLogger();
             Map<String, SwapResult> swapResultMap = chain.getBatchInfo().getSwapResultMap();
             for (Transaction tx : txs) {
+                logger.info("[commit] Swap Create Pair, hash: {}", tx.getHash().toHex());
                 SwapResult result = swapResultMap.get(tx.getHash().toHex());
+                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 CreatePairData txData = new CreatePairData();
                 txData.parse(tx.getTxData(), 0);
                 LedgerAssetDTO dto = ledgerAssetRegisterHelper.lpAssetReg(chainId, txData.getToken0(), txData.getToken1());
                 logger.info("[commit] Create Pair Info: {}-{}, symbol: {}, decimals: {}", dto.getChainId(), dto.getAssetId(), dto.getAssetSymbol(), dto.getDecimalPlace());
-                swapExecuteResultStorageService.save(chainId, tx.getHash(), result);
             }
         } catch (Exception e) {
             chain.getLogger().error(e);
@@ -143,10 +144,10 @@ public class CreatePairTxProcessor implements TransactionProcessor {
             for (Transaction tx : txs) {
                 SwapResult result = swapExecuteResultStorageService.getResult(chainId, tx.getHash());
                 if (result == null) {
-                    return true;
+                    continue;
                 }
                 if (!result.isSuccess()) {
-                    return true;
+                    continue;
                 }
                 CreatePairData txData = new CreatePairData();
                 txData.parse(tx.getTxData(), 0);
